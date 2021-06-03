@@ -4,6 +4,10 @@ A tech demo
 
 ## ✅ Progress
 
+- [X] Read the [Rust book](https://doc.rust-lang.org/stable/book/)
+- [X] Follow a [wgpu tutorial](https://sotrh.github.io/learn-wgpu/)
+- [X] Get a grasp on [winit](https://crates.io/crates/winit)
+- [ ] Write some boilerplate
 - [ ] Camera + movement
 - [ ] Colored voxels
 - [ ] Chunks
