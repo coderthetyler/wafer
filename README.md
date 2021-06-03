@@ -2,22 +2,25 @@
 
 A tech demo
 
-- 🎥 Insert video link here later
-- 🌎 Insert images here later
-
 ## ✅ Progress
 
-[ ] Camera + movement
-[ ] Colored voxels
-[ ] Chunks
-[ ] Terrain editing
-[ ] Collision detection
-[ ] Gravity
-[ ] Noisy terrain generation
+- [ ] Camera + movement
+- [ ] Colored voxels
+- [ ] Chunks
+- [ ] Terrain editing
+- [ ] Collision detection
+- [ ] Gravity
+- [ ] Noisy terrain generation
+- [ ] Make video
+- [ ] Add screeshots here
+- [ ] Make video & repository available to Patrons
+- [ ] Add video link here
+- [ ] Post video
+- [ ] Make repository public after two weeks
 
 ## 🔥 Getting started
 
-- Install Rust 🦀
+- [Install Rust 🦀](https://www.rust-lang.org)
 - Clone this repo & do a `cargo run`
 - Make some tea while it compiles ~
 
