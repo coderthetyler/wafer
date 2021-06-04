@@ -150,7 +150,7 @@ fn main() {
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
-            Event::MainEventsCleared => {}
+            Event::MainEventsCleared => window.request_redraw(),
             Event::RedrawRequested(window_id) if window_id == window.id() => state.redraw(),
             Event::WindowEvent { window_id, event } if window.id() == window_id => match event {
                 WindowEvent::CloseRequested => *control_flow = winit::event_loop::ControlFlow::Exit,
