@@ -1,6 +1,9 @@
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
+mod mesh;
+mod voxel;
+
 struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -42,7 +45,6 @@ impl State {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let swapchain = device.create_swap_chain(&surface, &swapchain_desc);
-
         let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: None,
             flags: wgpu::ShaderFlags::all(),
@@ -159,7 +161,7 @@ fn main() {
                 }
                 WindowEvent::Resized(ref new_size) => state.resize(new_size),
 
-                // Unused
+                // Unused (I like exhaustive cases!)
                 WindowEvent::KeyboardInput { .. } => {}
                 WindowEvent::CursorMoved { .. } => {}
                 WindowEvent::MouseInput { .. } => {}
