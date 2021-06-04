@@ -1,0 +1,14 @@
+[package]
+authors = ["T.J. Daddio"]
+description = "A tech demo"
+edition = "2018"
+name = "voxel-planet"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bytemuck = {version = "1.5.1", features = ["derive"]}
+futures = "0.3.15"
+wgpu = "0.8.1"
+winit = "0.25.0"

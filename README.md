@@ -7,9 +7,9 @@ A tech demo
 - [X] Read the [Rust book](https://doc.rust-lang.org/stable/book/)
 - [X] Follow a [wgpu tutorial](https://sotrh.github.io/learn-wgpu/)
 - [X] Get a grasp on [winit](https://crates.io/crates/winit)
-- [ ] Write some boilerplate
-- [ ] Camera + movement
+- [X] Write the boilerplate from memory
 - [ ] Colored voxels
+- [ ] Camera + movement
 - [ ] Chunks
 - [ ] Terrain editing
 - [ ] Collision detection
@@ -21,6 +21,12 @@ A tech demo
 - [ ] Add video link here
 - [ ] Post video
 - [ ] Make repository public after two weeks
+
+### ✨ Extra credit
+
+- [ ] Text rendering for debug info
+- [ ] Secondary free camera to assist in debugging
+- [ ] Sliders to vary values in ranges w/o recompiling
 
 ## 🔥 Getting started
 
@@ -34,3 +40,4 @@ A tech demo
 - [Building WebGPU with Rust @ FOSDEM 2020](https://www.youtube.com/watch?v=vV8mwo65kR8)
 - [The Rust Programming Language](https://doc.rust-lang.org/stable/book/)
 - [Rust Cheat Sheet](https://cheats.rs/)
+- [WGSL specification](https://gpuweb.github.io/gpuweb/wgsl/)
