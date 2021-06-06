@@ -18,7 +18,7 @@ A tech demo
 - [ ] Gravity
 - [ ] Noisy terrain generation
 - [ ] Make video
-- [ ] Add screeshots here
+- [ ] Add more screeshots here
 - [ ] Make video & repository available to Patrons
 - [ ] Add video link here
 - [ ] Post video
@@ -29,6 +29,9 @@ A tech demo
 - [ ] Text rendering for debug info
 - [ ] Secondary free camera to assist in debugging
 - [ ] Sliders to vary values in ranges w/o recompiling
+- [ ] Benchmark performance for the following chunk-rendering strategies:
+  - CPU-side face culling w/ one mesh for each face (the original)
+  - Whole chunk w/ one mesh
 
 ## 🔥 Getting started
 

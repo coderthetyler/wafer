@@ -1,5 +1,3 @@
-use rand::{Rng, SeedableRng};
-
 use crate::{
     camera::Camera,
     voxel::{Axis, Chunk, Coordinate, Voxel, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z},
@@ -143,8 +141,6 @@ impl FaceMeshes {
                     Voxel::Grass => [0.33, 0.80, 0.46],
                     Voxel::Dirt => [0.35, 0.29, 0.21],
                 };
-                // let mut rand = rand_chacha::ChaCha8Rng::seed_from_u64(coord.as_index() as u64);
-                // let weight: f32 = rand.gen::<f32>();
                 let weight: f32 = rand::random();
                 let color: Vec3 = [color[0] * weight, color[1] * weight, color[2] * weight];
                 Face::new(axis, chunk.coord, coord, color)

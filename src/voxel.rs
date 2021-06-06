@@ -57,11 +57,6 @@ pub enum Voxel {
 
 impl Voxel {
     pub fn is_air(&self) -> bool {
-        // match self {
-        //     Voxel::Air => true,
-        //     _ => false,
-        // }
-        // matches!(*self, Voxel::Air)
         matches!(*self, Voxel::Air)
     }
 }
