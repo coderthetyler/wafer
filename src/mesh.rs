@@ -154,12 +154,12 @@ impl FaceMeshes {
             vertices.push(face.bottom_right);
             vertices.push(face.top_right);
             vertices.push(face.top_left);
-            indices.push(index);
+            indices.push(index + 0);
+            indices.push(index + 2);
             indices.push(index + 1);
-            indices.push(index + 2);
-            indices.push(index + 2);
+            indices.push(index + 0);
             indices.push(index + 3);
-            indices.push(index);
+            indices.push(index + 2);
             index += 4;
         }
         Mesh { vertices, indices }
