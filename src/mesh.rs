@@ -1,65 +1,190 @@
-use crate::voxel::Chunk;
-use crate::voxel::ChunkIndex;
+use rand::{Rng, SeedableRng};
+
+use crate::{
+    camera::Camera,
+    voxel::{Axis, Chunk, Coordinate, Voxel, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z},
+};
+
+type Vec3 = [f32; 3];
+fn add(a: Vec3, b: Vec3) -> Vec3 {
+    [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+}
 
 #[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct ColorVertex {
-    position: [f32; 3],
-    color: [f32; 3],
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Vertex {
+    pub position: Vec3,
+    pub color: Vec3,
 }
 
-/// Stores a mesh as a list of vertices and an index buffer.
-struct Mesh {
-    vertices: Vec<ColorVertex>,
-    indices: Vec<u32>,
+pub struct Mesh {
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u32>,
 }
 
-/// Stores meshes generated from a chunk. The meshes need to be recomputed if the chunk is updated.
-pub struct ChunkMeshes {
-    /// Index of the chunk these meshes are constructed from.
-    index: ChunkIndex,
-    /// Voxel faces in the positive x-direction.
-    x_pos: Mesh,
-    /// Voxel faces in the negative x-direction.
-    x_neg: Mesh,
-    /// Voxel faces in the positive y-direction.
-    y_pos: Mesh,
-    /// Voxel faces in the negative y-direction.
-    y_neg: Mesh,
-    /// Voxel faces in the positive z-direction.
-    z_pos: Mesh,
-    /// Voxel faces in the negative z-direction.
-    z_neg: Mesh,
+struct Face {
+    bottom_left: Vertex,
+    bottom_right: Vertex,
+    top_right: Vertex,
+    top_left: Vertex,
 }
 
-#[derive(Copy, Clone)]
-enum Direction {
-    Xpos,
-    Xneg,
-    Ypos,
-    Yneg,
-    Zpos,
-    Zneg,
-}
+impl Face {
+    const XPOS: [Vec3; 4] = [
+        [1.0, 0.0, 0.0], // bottom-left
+        [1.0, 0.0, 1.0], // bottom-right
+        [1.0, 1.0, 1.0], // top-right
+        [1.0, 1.0, 0.0], // top-left
+    ];
+    const XNEG: [Vec3; 4] = [
+        [0.0, 0.0, 1.0],
+        [0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 1.0, 1.0],
+    ];
+    const YPOS: [Vec3; 4] = [
+        [0.0, 1.0, 0.0],
+        [1.0, 1.0, 0.0],
+        [1.0, 1.0, 1.0],
+        [0.0, 1.0, 1.0],
+    ];
+    const YNEG: [Vec3; 4] = [
+        [0.0, 0.0, 1.0],
+        [1.0, 0.0, 1.0],
+        [1.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+    ];
+    const ZPOS: [Vec3; 4] = [
+        [1.0, 0.0, 1.0],
+        [0.0, 0.0, 1.0],
+        [0.0, 1.0, 1.0],
+        [1.0, 1.0, 1.0],
+    ];
+    const ZNEG: [Vec3; 4] = [
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [1.0, 1.0, 0.0],
+        [0.0, 1.0, 0.0],
+    ];
 
-impl ChunkMeshes {
-    fn build_face_mesh(chunk: &Chunk, direction: Direction) -> Mesh {
-        // Maybe it's better to build all face meshes at once?
-        // Is there an ideal voxel indexing strategy? A 'linear' winding order may not be ideal.
-        todo!("Implement me!")
+    fn new(axis: Axis, chunk_coord: Coordinate, voxel_coord: Coordinate, color: Vec3) -> Face {
+        let base: Vec3 = [
+            (chunk_coord.x * CHUNK_SIZE_X + voxel_coord.x) as f32,
+            (chunk_coord.y * CHUNK_SIZE_Y + voxel_coord.y) as f32,
+            (chunk_coord.z * CHUNK_SIZE_Z + voxel_coord.z) as f32,
+        ];
+        let face = match axis {
+            Axis::Xpos => Face::XPOS,
+            Axis::Xneg => Face::XNEG,
+            Axis::Ypos => Face::YPOS,
+            Axis::Yneg => Face::YNEG,
+            Axis::Zpos => Face::ZPOS,
+            Axis::Zneg => Face::ZNEG,
+        };
+        Face {
+            bottom_left: Vertex {
+                position: add(base, face[0]),
+                color,
+            },
+            bottom_right: Vertex {
+                position: add(base, face[1]),
+                color,
+            },
+            top_right: Vertex {
+                position: add(base, face[2]),
+                color,
+            },
+            top_left: Vertex {
+                position: add(base, face[3]),
+                color,
+            },
+        }
     }
 }
 
-impl Chunk {
-    pub fn build_meshes(&self) -> ChunkMeshes {
-        ChunkMeshes {
-            index: self.index,
-            x_pos: ChunkMeshes::build_face_mesh(self, Direction::Xpos),
-            x_neg: ChunkMeshes::build_face_mesh(self, Direction::Xneg),
-            y_pos: ChunkMeshes::build_face_mesh(self, Direction::Ypos),
-            y_neg: ChunkMeshes::build_face_mesh(self, Direction::Yneg),
-            z_pos: ChunkMeshes::build_face_mesh(self, Direction::Zpos),
-            z_neg: ChunkMeshes::build_face_mesh(self, Direction::Zneg),
+/// Stores meshes generated from a chunk. The meshes need to be recomputed if the chunk is updated.
+pub struct FaceMeshes {
+    /// Voxel faces in the positive x-direction.
+    pub x_pos: Mesh,
+    /// Voxel faces in the negative x-direction.
+    pub x_neg: Mesh,
+    /// Voxel faces in the positive y-direction.
+    pub y_pos: Mesh,
+    /// Voxel faces in the negative y-direction.
+    pub y_neg: Mesh,
+    /// Voxel faces in the positive z-direction.
+    pub z_pos: Mesh,
+    /// Voxel faces in the negative z-direction.
+    pub z_neg: Mesh,
+}
+
+impl FaceMeshes {
+    pub fn new(chunk: &Chunk) -> Self {
+        Self {
+            x_pos: FaceMeshes::build_face_mesh(chunk, Axis::Xpos),
+            x_neg: FaceMeshes::build_face_mesh(chunk, Axis::Xneg),
+            y_pos: FaceMeshes::build_face_mesh(chunk, Axis::Ypos),
+            y_neg: FaceMeshes::build_face_mesh(chunk, Axis::Yneg),
+            z_pos: FaceMeshes::build_face_mesh(chunk, Axis::Zpos),
+            z_neg: FaceMeshes::build_face_mesh(chunk, Axis::Zneg),
         }
+    }
+
+    fn build_face_mesh(chunk: &Chunk, axis: Axis) -> Mesh {
+        let next = &axis.as_displacement();
+        let faces: Vec<Face> = chunk
+            .iter()
+            .filter(|(coord, voxel)| {
+                !voxel.is_air() && matches!(chunk.get_voxel(coord + next), Some(Voxel::Air) | None)
+            })
+            .map(|(coord, voxel)| {
+                let color: [f32; 3] = match voxel {
+                    Voxel::Air => unreachable!(),
+                    Voxel::Grass => [0.33, 0.80, 0.46],
+                    Voxel::Dirt => [0.35, 0.29, 0.21],
+                };
+                // let mut rand = rand_chacha::ChaCha8Rng::seed_from_u64(coord.as_index() as u64);
+                // let weight: f32 = rand.gen::<f32>();
+                let weight: f32 = rand::random();
+                let color: Vec3 = [color[0] * weight, color[1] * weight, color[2] * weight];
+                Face::new(axis, chunk.coord, coord, color)
+            })
+            .collect();
+        let mut vertices: Vec<Vertex> = Vec::with_capacity(faces.len() * 4);
+        let mut indices: Vec<u32> = Vec::with_capacity(faces.len() * 6);
+        let mut index = 0u32;
+        for face in faces {
+            vertices.push(face.bottom_left);
+            vertices.push(face.bottom_right);
+            vertices.push(face.top_right);
+            vertices.push(face.top_left);
+            indices.push(index);
+            indices.push(index + 1);
+            indices.push(index + 2);
+            indices.push(index + 2);
+            indices.push(index + 3);
+            indices.push(index);
+            index += 4;
+        }
+        Mesh { vertices, indices }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Uniforms {
+    view_proj: [[f32; 4]; 4],
+}
+
+impl Uniforms {
+    pub fn new() -> Self {
+        use cgmath::SquareMatrix;
+        Self {
+            view_proj: cgmath::Matrix4::identity().into(),
+        }
+    }
+
+    pub fn update_view_proj(&mut self, camera: &Camera) {
+        self.view_proj = camera.build_view_projection_matrix().into();
     }
 }

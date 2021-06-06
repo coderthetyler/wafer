@@ -2,13 +2,15 @@
 
 A tech demo
 
+![Latest screenshot](screenshots/latest.png)
+
 ## ✅ Progress
 
-- [X] Read the [Rust book](https://doc.rust-lang.org/stable/book/)
-- [X] Follow a [wgpu tutorial](https://sotrh.github.io/learn-wgpu/)
-- [X] Get a grasp on [winit](https://crates.io/crates/winit)
-- [X] Write the boilerplate from memory
-- [ ] Colored voxels
+- [X] Read the [Rust book](https://doc.rust-lang.org/stable/book/) (May 2021)
+- [X] Follow a [wgpu tutorial](https://sotrh.github.io/learn-wgpu/) (May 2021)
+- [X] Get a grasp on [winit](https://crates.io/crates/winit) (May 2021)
+- [X] Write the boilerplate from memory (June 4, 2021)
+- [X] Colored voxels (June 6, 2021)
 - [ ] Camera + movement
 - [ ] Chunks
 - [ ] Terrain editing
