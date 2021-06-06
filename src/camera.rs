@@ -42,6 +42,10 @@ impl Camera {
         let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
         proj * view
     }
+
+    pub fn update_aspect(&mut self, width: f32, height: f32) {
+        self.aspect = width / height;
+    }
 }
 
 pub struct CameraController {

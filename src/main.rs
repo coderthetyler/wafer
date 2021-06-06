@@ -228,6 +228,9 @@ impl State {
             .create_swap_chain(&self.surface, &self.swapchain_desc);
         self.depth_texture =
             texture::Texture::new_depth_texture(&self.device, &self.swapchain_desc);
+        self.camera
+            .update_aspect(new_size.width as f32, new_size.height as f32);
+        self.controller.update_camera(&mut self.camera);
     }
 
     fn redraw(&self) {
