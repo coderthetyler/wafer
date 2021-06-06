@@ -123,50 +123,14 @@ impl<'chunk> Iterator for ChunkIter<'chunk> {
     }
 }
 
-#[derive(Clone, Copy)]
-pub enum Axis {
-    Xpos,
-    Xneg,
-    Ypos,
-    Yneg,
-    Zpos,
-    Zneg,
-}
-
-#[derive(Debug)]
-pub struct Displacement {
-    pub x: i32,
-    pub y: i32,
-    pub z: i32,
-}
-
-impl Displacement {
-    pub fn new(x: i32, y: i32, z: i32) -> Self {
-        Displacement { x, y, z }
-    }
-}
-
-impl Axis {
-    pub fn as_displacement(&self) -> Displacement {
-        match self {
-            Axis::Xpos => Displacement { x: 1, y: 0, z: 0 },
-            Axis::Xneg => Displacement { x: -1, y: 0, z: 0 },
-            Axis::Ypos => Displacement { x: 0, y: 1, z: 0 },
-            Axis::Yneg => Displacement { x: 0, y: -1, z: 0 },
-            Axis::Zpos => Displacement { x: 0, y: 0, z: 1 },
-            Axis::Zneg => Displacement { x: 0, y: 0, z: -1 },
-        }
-    }
-}
-
-impl Add<&Displacement> for &Coordinate {
+impl Add<&[i32; 3]> for &Coordinate {
     type Output = Coordinate;
 
-    fn add(self, rhs: &Displacement) -> Coordinate {
+    fn add(self, rhs: &[i32; 3]) -> Coordinate {
         Coordinate {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
+            x: self.x + rhs[0],
+            y: self.y + rhs[1],
+            z: self.z + rhs[2],
         }
     }
 }

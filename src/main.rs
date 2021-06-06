@@ -1,16 +1,23 @@
+use camera::Camera;
+use input::Inputs;
 use mesh::Mesh;
-use voxel::Axis;
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
+use winit::event::VirtualKeyCode;
 use winit::event::WindowEvent;
+use winit::event_loop::ControlFlow;
 use winit::window::Window;
 
-use crate::mesh::FaceMeshes;
+use crate::camera::TargetCamera;
 use crate::mesh::Uniforms;
 use crate::mesh::Vertex;
 use crate::voxel::Chunk;
+use crate::voxel::CHUNK_SIZE_X;
+use crate::voxel::CHUNK_SIZE_Y;
+use crate::voxel::CHUNK_SIZE_Z;
 
 mod camera;
+mod input;
 mod mesh;
 mod texture;
 mod voxel;
@@ -23,24 +30,23 @@ struct State {
     swapchain: wgpu::SwapChain,
     depth_texture: texture::Texture,
     pipeline: wgpu::RenderPipeline,
-    mesh_buffers: Vec<AxisMeshBuffer>,
+    mesh_buffers: Vec<MeshBuffer>,
     uniforms: Uniforms,
     uniform_buffer: wgpu::Buffer,
     uniform_group: wgpu::BindGroup,
-    camera: camera::Camera,
-    controller: camera::CameraController,
+    camera: Box<dyn Camera>,
+    inputs: Inputs,
 }
 
-struct AxisMeshBuffer {
-    axis: Axis,
+struct MeshBuffer {
     vertices: wgpu::Buffer,
     indices: wgpu::Buffer,
     vertex_count: u32,
     index_count: u32,
 }
 
-impl AxisMeshBuffer {
-    fn new(device: &wgpu::Device, axis: Axis, mesh: Mesh) -> Self {
+impl MeshBuffer {
+    fn new(device: &wgpu::Device, mesh: Mesh) -> Self {
         let vertex_count = mesh.vertices.len() as u32;
         let index_count = mesh.indices.len() as u32;
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -54,7 +60,6 @@ impl AxisMeshBuffer {
             usage: wgpu::BufferUsage::INDEX,
         });
         Self {
-            axis,
             vertices,
             indices,
             vertex_count,
@@ -104,24 +109,27 @@ impl State {
 
         let mut chunk = Chunk::new(0, 0, 0);
         chunk.randomize();
-        let meshes = FaceMeshes::new(&chunk);
-        let mesh_buffers: Vec<AxisMeshBuffer> = vec![
-            AxisMeshBuffer::new(&device, Axis::Zneg, meshes.z_neg),
-            AxisMeshBuffer::new(&device, Axis::Zpos, meshes.z_pos),
-            AxisMeshBuffer::new(&device, Axis::Yneg, meshes.y_neg),
-            AxisMeshBuffer::new(&device, Axis::Ypos, meshes.y_pos),
-            AxisMeshBuffer::new(&device, Axis::Xneg, meshes.x_neg),
-            AxisMeshBuffer::new(&device, Axis::Xpos, meshes.x_pos),
-        ];
+        let chunk_mesh = chunk.build_mesh();
+        let mesh_buffers: Vec<MeshBuffer> = vec![MeshBuffer::new(&device, chunk_mesh)];
         let vertex_layout = wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
-        let camera = camera::Camera::new(width, height);
-        let controller = camera::CameraController::new(0.5);
+        let camera: Box<dyn Camera> = Box::new(TargetCamera::new(
+            0.5,
+            [
+                CHUNK_SIZE_X as f32 / 2.0,
+                CHUNK_SIZE_Y as f32 / 2.0,
+                CHUNK_SIZE_Z as f32 / 2.0,
+            ],
+            CHUNK_SIZE_Z as f32 * 3.0,
+            width,
+            height,
+        ));
+        let inputs = Inputs::default();
         let mut uniforms = Uniforms::new();
-        uniforms.update_view_proj(&camera);
+        uniforms.view_proj = camera.build_view_projection_matrix().into();
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[uniforms]),
@@ -165,7 +173,7 @@ impl State {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Cw, // TODO for some reason my winding order is wrong?!
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
                 clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
@@ -202,13 +210,13 @@ impl State {
             uniform_buffer,
             uniform_group,
             camera,
-            controller,
+            inputs,
         }
     }
 
     fn update(&mut self) {
-        self.controller.update_camera(&mut self.camera);
-        self.uniforms.update_view_proj(&self.camera);
+        self.camera.update(&self.inputs);
+        self.uniforms.view_proj = self.camera.build_view_projection_matrix().into();
         self.queue.write_buffer(
             &self.uniform_buffer,
             0,
@@ -216,8 +224,68 @@ impl State {
         );
     }
 
-    fn input(&mut self, event: &WindowEvent) {
-        self.controller.process_events(event);
+    #[allow(clippy::collapsible_match)]
+    fn input(
+        &mut self,
+        src_window: &winit::window::WindowId,
+        event: &winit::event::Event<()>,
+    ) -> bool {
+        match event {
+            winit::event::Event::DeviceEvent { ref event, .. } => match event {
+                winit::event::DeviceEvent::MouseMotion { delta } => {
+                    self.inputs.mouse_delta = *delta;
+                    true
+                }
+                _ => false,
+            },
+            winit::event::Event::WindowEvent { window_id, event } if src_window == window_id => {
+                match event {
+                    winit::event::WindowEvent::KeyboardInput {
+                        input:
+                            winit::event::KeyboardInput {
+                                state,
+                                virtual_keycode: Some(keycode),
+                                ..
+                            },
+                        ..
+                    } => {
+                        let is_pressed = *state == winit::event::ElementState::Pressed;
+                        match keycode {
+                            winit::event::VirtualKeyCode::Space => {
+                                self.inputs.is_up_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::LShift => {
+                                self.inputs.is_down_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::W | winit::event::VirtualKeyCode::Up => {
+                                self.inputs.is_forward_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::A
+                            | winit::event::VirtualKeyCode::Left => {
+                                self.inputs.is_left_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::S
+                            | winit::event::VirtualKeyCode::Down => {
+                                self.inputs.is_backward_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::D
+                            | winit::event::VirtualKeyCode::Right => {
+                                self.inputs.is_right_pressed = is_pressed;
+                                true
+                            }
+                            _ => false,
+                        }
+                    }
+                    _ => false,
+                }
+            }
+            _ => false,
+        }
     }
 
     fn resize(&mut self, new_size: &PhysicalSize<u32>) {
@@ -230,7 +298,7 @@ impl State {
             texture::Texture::new_depth_texture(&self.device, &self.swapchain_desc);
         self.camera
             .update_aspect(new_size.width as f32, new_size.height as f32);
-        self.controller.update_camera(&mut self.camera);
+        self.camera.update(&self.inputs);
     }
 
     fn redraw(&self) {
@@ -282,58 +350,46 @@ impl State {
 
 fn main() {
     use winit::event::Event;
-    use winit::event_loop::{ControlFlow, EventLoop};
+    use winit::event_loop::EventLoop;
 
     let event_loop = EventLoop::new();
     let window = winit::window::WindowBuilder::new()
         .with_title("voxel-planet")
+        .with_visible(false)
         .build(&event_loop)
         .unwrap();
+    window.set_cursor_grab(true).unwrap();
+    window.set_cursor_visible(false);
+    window.set_visible(true);
     let mut state = futures::executor::block_on(State::new(&window));
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
+        if state.input(&window.id(), &event) {
+            return;
+        }
         match event {
             Event::MainEventsCleared => window.request_redraw(),
             Event::RedrawRequested(window_id) if window_id == window.id() => {
                 state.update();
                 state.redraw();
             }
-            Event::WindowEvent { window_id, event } if window.id() == window_id => match event {
-                WindowEvent::CloseRequested => *control_flow = winit::event_loop::ControlFlow::Exit,
+            Event::WindowEvent {
+                window_id,
+                ref event,
+            } if window.id() == window_id => match event {
+                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                     state.resize(new_inner_size)
                 }
                 WindowEvent::Resized(ref new_size) => state.resize(new_size),
-                WindowEvent::KeyboardInput { .. } => state.input(&event),
-
-                // Unused (I like exhaustive cases!)
-                WindowEvent::CursorMoved { .. } => {}
-                WindowEvent::MouseInput { .. } => {}
-                WindowEvent::Focused(_) => {}
-                WindowEvent::Moved(_) => {}
-                WindowEvent::Destroyed => {}
-                WindowEvent::DroppedFile(_) => {}
-                WindowEvent::HoveredFile(_) => {}
-                WindowEvent::HoveredFileCancelled => {}
-                WindowEvent::ReceivedCharacter(_) => {}
-                WindowEvent::ModifiersChanged(_) => {}
-                WindowEvent::CursorEntered { .. } => {}
-                WindowEvent::CursorLeft { .. } => {}
-                WindowEvent::MouseWheel { .. } => {}
-                WindowEvent::TouchpadPressure { .. } => {}
-                WindowEvent::AxisMotion { .. } => {}
-                WindowEvent::Touch(_) => {}
-                WindowEvent::ThemeChanged(_) => {}
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if let Some(VirtualKeyCode::Escape) = input.virtual_keycode {
+                        *control_flow = ControlFlow::Exit
+                    }
+                }
+                _ => {}
             },
-            Event::RedrawRequested(_) => {}
-            Event::WindowEvent { .. } => {}
-            Event::NewEvents(_) => {}
-            Event::DeviceEvent { .. } => {}
-            Event::UserEvent(_) => {}
-            Event::Suspended => {}
-            Event::Resumed => {}
-            Event::RedrawEventsCleared => {}
-            Event::LoopDestroyed => {}
+            _ => {}
         }
     });
 }
