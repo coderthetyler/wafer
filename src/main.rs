@@ -1,3 +1,5 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use camera::Camera;
 use input::Inputs;
 use mesh::Mesh;
@@ -8,6 +10,7 @@ use winit::event::WindowEvent;
 use winit::event_loop::ControlFlow;
 use winit::window::Window;
 
+use crate::camera::FreeCamera;
 use crate::camera::TargetCamera;
 use crate::mesh::Uniforms;
 use crate::mesh::Vertex;
@@ -41,13 +44,11 @@ struct State {
 struct MeshBuffer {
     vertices: wgpu::Buffer,
     indices: wgpu::Buffer,
-    vertex_count: u32,
     index_count: u32,
 }
 
 impl MeshBuffer {
     fn new(device: &wgpu::Device, mesh: Mesh) -> Self {
-        let vertex_count = mesh.vertices.len() as u32;
         let index_count = mesh.indices.len() as u32;
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
@@ -62,7 +63,6 @@ impl MeshBuffer {
         Self {
             vertices,
             indices,
-            vertex_count,
             index_count,
         }
     }
@@ -116,18 +116,19 @@ impl State {
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
-        let camera: Box<dyn Camera> = Box::new(TargetCamera::new(
-            0.5,
-            [
-                CHUNK_SIZE_X as f32 / 2.0,
-                CHUNK_SIZE_Y as f32 / 2.0,
-                CHUNK_SIZE_Z as f32 / 2.0,
-            ],
-            CHUNK_SIZE_Z as f32 * 3.0,
-            width,
-            height,
-        ));
-        let inputs = Inputs::default();
+        // let camera: Box<dyn Camera> = Box::new(TargetCamera::new(
+        //     0.5,
+        //     [
+        //         CHUNK_SIZE_X as f32 / 2.0,
+        //         CHUNK_SIZE_Y as f32 / 2.0,
+        //         CHUNK_SIZE_Z as f32 / 2.0,
+        //     ],
+        //     CHUNK_SIZE_Z as f32 * 3.0,
+        //     width,
+        //     height,
+        // ));
+        let camera: Box<dyn Camera> = Box::new(FreeCamera::new(20.0, width, height));
+        let inputs = Inputs::new(Inputs::now());
         let mut uniforms = Uniforms::new();
         uniforms.view_proj = camera.build_view_projection_matrix().into();
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -215,6 +216,11 @@ impl State {
     }
 
     fn update(&mut self) {
+        let now = Inputs::now();
+        let delta_ms = now - self.inputs.last_time;
+        let delta_s = delta_ms as f32 / 1000.0;
+        self.inputs.delta_time = delta_s;
+
         self.camera.update(&self.inputs);
         self.uniforms.view_proj = self.camera.build_view_projection_matrix().into();
         self.queue.write_buffer(
@@ -222,6 +228,10 @@ impl State {
             0,
             bytemuck::cast_slice(&[self.uniforms]),
         );
+
+        // We've consumed the inputs, make a new struct for next frame
+        self.inputs.clear();
+        self.inputs.last_time = now;
     }
 
     #[allow(clippy::collapsible_match)]
@@ -233,7 +243,8 @@ impl State {
         match event {
             winit::event::Event::DeviceEvent { ref event, .. } => match event {
                 winit::event::DeviceEvent::MouseMotion { delta } => {
-                    self.inputs.mouse_delta = *delta;
+                    let (dx, dy) = self.inputs.mouse_delta;
+                    self.inputs.mouse_delta = (dx + delta.0, dy + delta.1);
                     true
                 }
                 _ => false,

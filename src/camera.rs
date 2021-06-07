@@ -1,4 +1,4 @@
-use cgmath::{Deg, Matrix4, Rad};
+use cgmath::{Angle, Deg, InnerSpace, Matrix4, Transform, Vector3};
 
 use crate::input;
 
@@ -6,7 +6,6 @@ pub trait Camera {
     fn build_view_projection_matrix(&self) -> Matrix4<f32>;
     fn update_aspect(&mut self, width: f32, height: f32);
     fn update(&mut self, inputs: &input::Inputs);
-    // TODO add a forward vector for CPU-side voxel face mesh culling
 }
 
 pub struct FreeCamera {
@@ -18,6 +17,7 @@ pub struct FreeCamera {
     znear: f32,
     zfar: f32,
     speed: f32,
+    sensitivity: f32,
 }
 
 impl FreeCamera {
@@ -31,16 +31,31 @@ impl FreeCamera {
             znear: 0.1,
             zfar: 100.0,
             speed,
+            sensitivity: 1.0 / 4.0,
         }
+    }
+
+    fn get_forward_vector(&self) -> [f32; 3] {
+        let yaw = Deg(-self.yaw);
+        let pitch = Deg(-self.pitch);
+        [
+            pitch.cos() * yaw.sin(),
+            -pitch.sin(),
+            pitch.cos() * yaw.cos(),
+        ]
+    }
+
+    fn get_right_vector(&self) -> [f32; 3] {
+        let yaw = Deg(-self.yaw);
+        [-yaw.cos(), 0.0, yaw.sin()]
     }
 }
 
 impl Camera for FreeCamera {
     fn build_view_projection_matrix(&self) -> Matrix4<f32> {
-        let view = Matrix4::from_angle_x(Rad(self.pitch))
-            * Matrix4::from_angle_y(Rad(self.yaw))
+        let view = Matrix4::from_angle_x(Deg(self.pitch))
+            * Matrix4::from_angle_y(Deg(self.yaw))
             * Matrix4::from_translation(self.position);
-
         let proj = cgmath::perspective(Deg(self.fovy), self.aspect, self.znear, self.zfar);
         proj * view
     }
@@ -50,17 +65,46 @@ impl Camera for FreeCamera {
     }
 
     fn update(&mut self, inputs: &input::Inputs) {
-        // capture mouse
-        // parse mouse move events into controller
-        // update pitch and yaw with mouse movements
-        // calculate forward and up vectors
-        // move at speed along vectors: -forward, forward, -up, up
-        // todo!()
+        let speed = self.speed * inputs.delta_time;
+        let (yaw_delta, pitch_delta) = inputs.mouse_delta;
+        self.yaw += yaw_delta as f32 * self.sensitivity;
+        self.yaw %= 360.0;
+        self.pitch += pitch_delta as f32 * self.sensitivity;
+        self.pitch = self.pitch.min(90.0).max(-90.0);
+
+        let forward: Vector3<f32> = self.get_forward_vector().into();
+        let forward = forward.normalize();
+        let right: Vector3<f32> = self.get_right_vector().into();
+        let right = right.normalize();
+        let unit_up: Vector3<f32> = [0.0, -1.0, 0.0].into();
+
+        let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();
+        if inputs.is_forward_pressed {
+            delta += forward;
+        }
+        if inputs.is_backward_pressed {
+            delta -= forward;
+        }
+        if inputs.is_up_pressed {
+            delta += unit_up;
+        }
+        if inputs.is_down_pressed {
+            delta -= unit_up;
+        }
+        if inputs.is_right_pressed {
+            delta += right;
+        }
+        if inputs.is_left_pressed {
+            delta -= right;
+        }
+        if delta.magnitude2() != 0.0 {
+            let delta = speed * delta.normalize();
+            self.position += delta;
+        }
     }
 }
 
-// TODO please make the camera better
-// Stolen from https://github.com/sotrh/learn-wgpu
+// Mostly stolen from https://github.com/sotrh/learn-wgpu
 pub struct TargetCamera {
     eye: cgmath::Point3<f32>,
     target: cgmath::Point3<f32>,
@@ -99,7 +143,6 @@ impl Camera for TargetCamera {
     }
 
     fn update(&mut self, inputs: &input::Inputs) {
-        use cgmath::InnerSpace;
         let forward = self.target - self.eye;
         let forward_norm = forward.normalize();
         let forward_mag = forward.magnitude();
