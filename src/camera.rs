@@ -76,7 +76,7 @@ impl Camera for FreeCamera {
         let forward = forward.normalize();
         let right: Vector3<f32> = self.get_right_vector().into();
         let right = right.normalize();
-        let unit_up: Vector3<f32> = [0.0, -1.0, 0.0].into();
+        let up: Vector3<f32> = forward.cross(right).normalize();
 
         let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();
         if inputs.is_forward_pressed {
@@ -86,10 +86,10 @@ impl Camera for FreeCamera {
             delta -= forward;
         }
         if inputs.is_up_pressed {
-            delta += unit_up;
+            delta += up;
         }
         if inputs.is_down_pressed {
-            delta -= unit_up;
+            delta -= up;
         }
         if inputs.is_right_pressed {
             delta += right;
