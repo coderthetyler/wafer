@@ -243,8 +243,7 @@ impl State {
         match event {
             winit::event::Event::DeviceEvent { ref event, .. } => match event {
                 winit::event::DeviceEvent::MouseMotion { delta } => {
-                    let (dx, dy) = self.inputs.mouse_delta;
-                    self.inputs.mouse_delta = (dx + delta.0, dy + delta.1);
+                    self.inputs.inc_mouse_delta(delta);
                     true
                 }
                 _ => false,
