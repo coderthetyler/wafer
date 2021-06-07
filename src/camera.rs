@@ -67,7 +67,6 @@ impl Camera for FreeCamera {
     fn update(&mut self, inputs: &input::Inputs) {
         let speed = self.speed * inputs.delta_time;
         let (yaw_delta, pitch_delta) = inputs.mouse_delta();
-        println!("{:?}, {:?}", yaw_delta, pitch_delta);
         self.yaw += yaw_delta as f32 * self.sensitivity;
         self.yaw %= 360.0;
         self.pitch += pitch_delta as f32 * self.sensitivity;
