@@ -100,17 +100,6 @@ impl State {
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
-        // let camera: Box<dyn Camera> = Box::new(TargetCamera::new(
-        //     0.5,
-        //     [
-        //         CHUNK_SIZE_X as f32 / 2.0,
-        //         CHUNK_SIZE_Y as f32 / 2.0,
-        //         CHUNK_SIZE_Z as f32 / 2.0,
-        //     ],
-        //     CHUNK_SIZE_Z as f32 * 3.0,
-        //     width,
-        //     height,
-        // ));
         let camera: Box<dyn Camera> = Box::new(FreeCamera::new(20.0, width, height));
         let inputs = Inputs::new();
         let mut uniforms = Uniforms::new();
