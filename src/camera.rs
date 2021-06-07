@@ -1,11 +1,11 @@
 use cgmath::{Angle, Deg, InnerSpace, Matrix4, Vector3};
 
-use crate::input;
+use crate::{input, time::Seconds};
 
 pub trait Camera {
     fn build_view_projection_matrix(&self) -> Matrix4<f32>;
     fn update_aspect(&mut self, width: f32, height: f32);
-    fn update(&mut self, inputs: &input::Inputs);
+    fn update(&mut self, inputs: &input::Inputs, delta: Seconds);
 }
 
 pub struct FreeCamera {
@@ -64,8 +64,8 @@ impl Camera for FreeCamera {
         self.aspect = width / height;
     }
 
-    fn update(&mut self, inputs: &input::Inputs) {
-        let speed = self.speed * inputs.delta_time;
+    fn update(&mut self, inputs: &input::Inputs, delta: Seconds) {
+        let speed = self.speed * delta.as_f32();
         let (yaw_delta, pitch_delta) = inputs.mouse_delta();
         self.yaw += yaw_delta as f32 * self.sensitivity;
         self.yaw %= 360.0;
@@ -142,7 +142,7 @@ impl Camera for TargetCamera {
         self.aspect = width / height;
     }
 
-    fn update(&mut self, inputs: &input::Inputs) {
+    fn update(&mut self, inputs: &input::Inputs, delta: Seconds) {
         let forward = self.target - self.eye;
         let forward_norm = forward.normalize();
         let forward_mag = forward.magnitude();

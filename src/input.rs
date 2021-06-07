@@ -1,4 +1,4 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use crate::time::{Seconds, Timestamp};
 
 const MOUSE_SMOOTH_FRAMES: usize = 4;
 
@@ -9,13 +9,12 @@ pub struct Inputs {
     pub is_backward_pressed: bool,
     pub is_left_pressed: bool,
     pub is_right_pressed: bool,
-    pub last_time: u128,
-    pub delta_time: f32,
+    last_time: Timestamp,
     mouse_deltas: [(f64, f64); MOUSE_SMOOTH_FRAMES], // TODO use as ring buffer!
 }
 
 impl Inputs {
-    pub fn new(now: u128) -> Self {
+    pub fn new() -> Self {
         Self {
             is_up_pressed: false,
             is_down_pressed: false,
@@ -24,8 +23,7 @@ impl Inputs {
             is_left_pressed: false,
             is_right_pressed: false,
             mouse_deltas: [(0.0, 0.0); MOUSE_SMOOTH_FRAMES],
-            last_time: now,
-            delta_time: 0.0,
+            last_time: Timestamp::now(),
         }
     }
 
@@ -49,17 +47,17 @@ impl Inputs {
         (delta.0 / total_weight, delta.1 / total_weight)
     }
 
-    pub fn clear(&mut self) {
+    pub fn end_frame(&mut self) {
         for i in (1..MOUSE_SMOOTH_FRAMES).rev() {
             self.mouse_deltas[i] = self.mouse_deltas[i - 1];
         }
         self.mouse_deltas[0] = (0.0, 0.0);
     }
 
-    pub fn now() -> u128 {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards!")
-            .as_millis()
+    pub fn start_frame(&mut self) -> Seconds {
+        let now = Timestamp::now();
+        let delta_s = now.delta(self.last_time);
+        self.last_time = now;
+        delta_s
     }
 }
