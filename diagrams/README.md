@@ -2,8 +2,8 @@
 
 ## 📐 Coordinate systems
 
-![winit](winit.png)
-
-![wgpu-framebuffer](wgpu-framebuffer.png)
-
-![wgpu-ndc](wgpu-ndc.png)
+<span>
+<img src="winit.png" width="200">
+<img src="wgpu-framebuffer.png" width="200">
+<img src="wgpu-ndc.png" width="200">
+</span>
