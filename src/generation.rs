@@ -132,15 +132,15 @@ impl<T> GenerationalIndexVec<T> {
 mod tests {
     use super::*;
 
-    fn gen_index(index: usize, generation: u64) -> GenerationalIndex {
+    fn index(index: usize, generation: u64) -> GenerationalIndex {
         GenerationalIndex { index, generation }
     }
 
     #[test]
     fn set_consecutive_values() {
         let mut vec = GenerationalIndexVec::<u32>::new();
-        let index0gen1 = gen_index(0, 1);
-        let index1gen1 = gen_index(1, 1);
+        let index0gen1 = index(0, 1);
+        let index1gen1 = index(1, 1);
         vec.set(index0gen1, 5);
         vec.set(index1gen1, 3);
         assert_eq!(vec.0.len(), 2);
@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn overwrite_value_with_same_generation() {
         let mut vec = GenerationalIndexVec::<u32>::new();
-        let index0gen1 = gen_index(0, 1);
+        let index0gen1 = index(0, 1);
         vec.set(index0gen1, 5);
         vec.set(index0gen1, 2);
         vec.set(index0gen1, 10);
@@ -162,8 +162,8 @@ mod tests {
     #[test]
     fn overwrite_value_with_new_generation() {
         let mut vec = GenerationalIndexVec::<u32>::new();
-        let index0gen1 = gen_index(0, 1);
-        let index0gen2 = gen_index(0, 2);
+        let index0gen1 = index(0, 1);
+        let index0gen2 = index(0, 2);
         vec.set(index0gen1, 10);
         vec.set(index0gen2, 4);
         assert_eq!(vec.0.len(), 1);
@@ -174,8 +174,8 @@ mod tests {
     #[test]
     fn set_with_index_gap() {
         let mut vec = GenerationalIndexVec::<u32>::new();
-        let index0gen1 = gen_index(0, 1);
-        let index10gen1 = gen_index(10, 1);
+        let index0gen1 = index(0, 1);
+        let index10gen1 = index(10, 1);
         vec.set(index0gen1, 5);
         vec.set(index10gen1, 3);
         assert_eq!(vec.0.len(), 11);
@@ -186,11 +186,56 @@ mod tests {
     #[test]
     fn overwrite_value_in_place() {
         let mut vec = GenerationalIndexVec::<u32>::new();
-        let index0gen1 = gen_index(0, 1);
+        let index0gen1 = index(0, 1);
         vec.set(index0gen1, 4);
         let entry = vec.get_mut(index0gen1).unwrap();
         *entry += 2;
         assert_eq!(vec.0.len(), 1);
         assert_eq!(vec.get(index0gen1), Some(&6));
+    }
+
+    #[test]
+    fn allocate_index() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        let index0gen1 = allocator.allocate();
+        assert_eq!(index0gen1.index, 0);
+        assert_eq!(index0gen1.generation, 1);
+    }
+
+    #[test]
+    fn is_live() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        let index0gen1 = allocator.allocate();
+        assert_eq!(allocator.is_live(index0gen1), true);
+        assert_eq!(allocator.deallocate(index0gen1), true);
+        assert_eq!(allocator.is_live(index0gen1), false);
+    }
+
+    #[test]
+    fn deallocate_twice_returns_false() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        let index0gen1 = allocator.allocate();
+        assert_eq!(allocator.deallocate(index0gen1), true);
+        assert_eq!(allocator.deallocate(index0gen1), false);
+    }
+
+    #[test]
+    fn reallocate_reuses_old_index() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        let index0gen1 = allocator.allocate();
+        allocator.deallocate(index0gen1);
+        let index0gen2 = allocator.allocate();
+        assert_eq!(index0gen2.index, 0);
+        assert_eq!(index0gen2.generation, 2);
+    }
+
+    #[test]
+    fn just_do_alot_of_allocations() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        for i in 0..10 {
+            let index = allocator.allocate();
+            assert_eq!(index.index, i);
+            assert_eq!(index.generation, 1);
+        }
     }
 }
