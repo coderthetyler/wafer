@@ -5,6 +5,7 @@ use winit::event_loop::ControlFlow;
 
 mod camera;
 mod draw;
+mod generation;
 mod input;
 mod mesh;
 mod texture;
