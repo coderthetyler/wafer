@@ -1,10 +1,16 @@
 use std::cmp::Ordering;
 
 /// Index into a [`GenerationalIndexArray`].
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct GenerationalIndex {
     index: usize,
     generation: u64,
+}
+
+impl PartialEq for GenerationalIndex {
+    fn eq(&self, other: &Self) -> bool {
+        self.index == other.index && self.generation == other.generation
+    }
 }
 
 impl GenerationalIndex {
@@ -22,6 +28,32 @@ struct AllocatorEntry {
     generation: u64,
 }
 
+pub struct GenerationalIndexIter<'allocator> {
+    allocator: &'allocator GenerationalIndexAllocator,
+    index: usize,
+}
+
+impl<'allocator> Iterator for GenerationalIndexIter<'allocator> {
+    type Item = GenerationalIndex;
+
+    fn next(&mut self) -> Option<GenerationalIndex> {
+        loop {
+            let index = self.index;
+            self.index += 1;
+            match self.allocator.entries.get(index) {
+                Some(entry) if entry.is_live => {
+                    return Some(GenerationalIndex {
+                        index,
+                        generation: entry.generation,
+                    });
+                }
+                None => return None,
+                Some(_) => {}
+            }
+        }
+    }
+}
+
 /// Allocates & deallocates generational indices.
 pub struct GenerationalIndexAllocator {
     entries: Vec<AllocatorEntry>,
@@ -36,12 +68,20 @@ impl GenerationalIndexAllocator {
         }
     }
 
+    pub fn iter(&self) -> GenerationalIndexIter {
+        GenerationalIndexIter {
+            allocator: self,
+            index: 0,
+        }
+    }
+
     /// Allocate an index, potentially reusing memory from a previously deallocated index.
     pub fn allocate(&mut self) -> GenerationalIndex {
         match self.free.pop() {
             Some(index) => {
                 let entry = &mut self.entries[index];
                 entry.generation += 1;
+                entry.is_live = true;
                 GenerationalIndex {
                     index,
                     generation: entry.generation,
@@ -204,6 +244,15 @@ mod tests {
     }
 
     #[test]
+    fn get_none_gives_none() {
+        let mut vec = GenerationalIndexVec::<u32>::new();
+        let none = GenerationalIndex::none();
+        let index0gen1 = index(0, 1);
+        vec.set(index0gen1, 5);
+        assert_eq!(vec.get(none), None);
+    }
+
+    #[test]
     fn allocate_index() {
         let mut allocator = GenerationalIndexAllocator::new();
         let index0gen1 = allocator.allocate();
@@ -212,12 +261,22 @@ mod tests {
     }
 
     #[test]
-    fn is_live() {
+    fn not_is_live_after_deallocation() {
         let mut allocator = GenerationalIndexAllocator::new();
         let index0gen1 = allocator.allocate();
         assert_eq!(allocator.is_live(index0gen1), true);
         assert_eq!(allocator.deallocate(index0gen1), true);
         assert_eq!(allocator.is_live(index0gen1), false);
+    }
+
+    #[test]
+    fn is_live_after_reallocation() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        let index0gen1 = allocator.allocate();
+        allocator.deallocate(index0gen1);
+        let index0gen2 = allocator.allocate();
+        assert_eq!(allocator.is_live(index0gen1), false);
+        assert_eq!(allocator.is_live(index0gen2), true);
     }
 
     #[test]
@@ -249,11 +308,41 @@ mod tests {
     }
 
     #[test]
-    fn get_none_gives_none() {
-        let mut vec = GenerationalIndexVec::<u32>::new();
-        let none = GenerationalIndex::none();
-        let index0gen1 = index(0, 1);
-        vec.set(index0gen1, 5);
-        assert_eq!(vec.get(none), None);
+    fn iter_includes_allocated_indices() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        let index0gen1 = allocator.allocate();
+        let index1gen1 = allocator.allocate();
+        let index2gen1 = allocator.allocate();
+        let iter = &mut allocator.iter();
+        assert_eq!(iter.next(), Some(index0gen1));
+        assert_eq!(iter.next(), Some(index1gen1));
+        assert_eq!(iter.next(), Some(index2gen1));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_excludes_deallocated_indices() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        let index0gen1 = allocator.allocate();
+        let index1gen1 = allocator.allocate();
+        let index2gen1 = allocator.allocate();
+        allocator.deallocate(index1gen1);
+        let iter = &mut allocator.iter();
+        assert_eq!(iter.next(), Some(index0gen1));
+        assert_eq!(iter.next(), Some(index2gen1));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_includes_correct_generation() {
+        let mut allocator = GenerationalIndexAllocator::new();
+        let index0gen1 = allocator.allocate();
+        let index1gen1 = allocator.allocate();
+        allocator.deallocate(index1gen1);
+        let index1gen2 = allocator.allocate();
+        let iter = &mut allocator.iter();
+        assert_eq!(iter.next(), Some(index0gen1));
+        assert_eq!(iter.next(), Some(index1gen2));
+        assert_eq!(iter.next(), None);
     }
 }
