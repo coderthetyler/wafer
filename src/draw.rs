@@ -3,35 +3,24 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
     camera::{Camera, FreeCamera},
-    input::Inputs,
+    entity::EntitySystem,
+    geometry::AspectRatio,
     mesh::{Mesh, Uniforms, Vertex},
     texture,
     voxel::Chunk,
 };
 
-pub struct State {
-    surface: wgpu::Surface,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    swapchain_desc: wgpu::SwapChainDescriptor,
-    swapchain: wgpu::SwapChain,
-    depth_texture: texture::Texture,
-    pipeline: wgpu::RenderPipeline,
-    mesh_buffers: Vec<MeshBuffer>,
-    uniforms: Uniforms,
-    uniform_buffer: wgpu::Buffer,
-    uniform_group: wgpu::BindGroup,
-    camera: Box<dyn Camera>,
-    inputs: Inputs,
+pub struct DrawComponent {
+    mesh: IndexedVertexBuffer,
 }
 
-struct MeshBuffer {
+struct IndexedVertexBuffer {
     vertices: wgpu::Buffer,
     indices: wgpu::Buffer,
     index_count: u32,
 }
 
-impl MeshBuffer {
+impl IndexedVertexBuffer {
     pub fn new(device: &wgpu::Device, mesh: Mesh) -> Self {
         let index_count = mesh.indices.len() as u32;
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -52,7 +41,22 @@ impl MeshBuffer {
     }
 }
 
-impl State {
+pub struct DrawSystem {
+    surface: wgpu::Surface,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    swapchain_desc: wgpu::SwapChainDescriptor,
+    swapchain: wgpu::SwapChain,
+    depth_texture: texture::Texture,
+    pipeline: wgpu::RenderPipeline,
+    mesh_buffers: Vec<IndexedVertexBuffer>,
+    uniforms: Uniforms,
+    uniform_buffer: wgpu::Buffer,
+    uniform_group: wgpu::BindGroup,
+    default_camera: FreeCamera,
+}
+
+impl DrawSystem {
     pub async fn new(window: &Window) -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let surface = unsafe { instance.create_surface(window) };
@@ -94,16 +98,19 @@ impl State {
         let mut chunk = Chunk::new(0, 0, 0);
         chunk.randomize();
         let chunk_mesh = chunk.build_mesh();
-        let mesh_buffers: Vec<MeshBuffer> = vec![MeshBuffer::new(&device, chunk_mesh)];
+        let mesh_buffers: Vec<IndexedVertexBuffer> =
+            vec![IndexedVertexBuffer::new(&device, chunk_mesh)]; // TODO remove chunk & mesh buffers from draw system, grab drawcomponents from entity system instead
         let vertex_layout = wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
-        let camera: Box<dyn Camera> = Box::new(FreeCamera::new(20.0, width, height));
-        let inputs = Inputs::new();
+        let default_camera = FreeCamera::new(20.0);
         let mut uniforms = Uniforms::new();
-        uniforms.view_proj = camera.build_view_projection_matrix().into();
+        let aspect_ratio: AspectRatio = (width as f32, height as f32).into();
+        uniforms.view_proj = default_camera
+            .build_view_projection_matrix(aspect_ratio)
+            .into();
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[uniforms]),
@@ -183,90 +190,11 @@ impl State {
             uniforms,
             uniform_buffer,
             uniform_group,
-            camera,
-            inputs,
+            default_camera,
         }
     }
 
-    pub fn update(&mut self) {
-        let delta = self.inputs.start_frame();
-
-        self.camera.update(&self.inputs, delta);
-        self.uniforms.view_proj = self.camera.build_view_projection_matrix().into();
-        self.queue.write_buffer(
-            &self.uniform_buffer,
-            0,
-            bytemuck::cast_slice(&[self.uniforms]),
-        );
-
-        self.inputs.end_frame();
-    }
-
-    #[allow(clippy::collapsible_match)]
-    pub fn input(
-        &mut self,
-        src_window: &winit::window::WindowId,
-        event: &winit::event::Event<()>,
-    ) -> bool {
-        match event {
-            winit::event::Event::DeviceEvent { ref event, .. } => match event {
-                winit::event::DeviceEvent::MouseMotion { delta } => {
-                    self.inputs.inc_mouse_delta(delta);
-                    true
-                }
-                _ => false,
-            },
-            winit::event::Event::WindowEvent { window_id, event } if src_window == window_id => {
-                match event {
-                    winit::event::WindowEvent::KeyboardInput {
-                        input:
-                            winit::event::KeyboardInput {
-                                state,
-                                virtual_keycode: Some(keycode),
-                                ..
-                            },
-                        ..
-                    } => {
-                        let is_pressed = *state == winit::event::ElementState::Pressed;
-                        match keycode {
-                            winit::event::VirtualKeyCode::Space => {
-                                self.inputs.is_up_pressed = is_pressed;
-                                true
-                            }
-                            winit::event::VirtualKeyCode::LShift => {
-                                self.inputs.is_down_pressed = is_pressed;
-                                true
-                            }
-                            winit::event::VirtualKeyCode::W | winit::event::VirtualKeyCode::Up => {
-                                self.inputs.is_forward_pressed = is_pressed;
-                                true
-                            }
-                            winit::event::VirtualKeyCode::A
-                            | winit::event::VirtualKeyCode::Left => {
-                                self.inputs.is_left_pressed = is_pressed;
-                                true
-                            }
-                            winit::event::VirtualKeyCode::S
-                            | winit::event::VirtualKeyCode::Down => {
-                                self.inputs.is_backward_pressed = is_pressed;
-                                true
-                            }
-                            winit::event::VirtualKeyCode::D
-                            | winit::event::VirtualKeyCode::Right => {
-                                self.inputs.is_right_pressed = is_pressed;
-                                true
-                            }
-                            _ => false,
-                        }
-                    }
-                    _ => false,
-                }
-            }
-            _ => false,
-        }
-    }
-
-    pub fn resize(&mut self, new_size: &PhysicalSize<u32>) {
+    pub fn resize_surface(&mut self, new_size: &PhysicalSize<u32>) {
         self.swapchain_desc.width = new_size.width;
         self.swapchain_desc.height = new_size.height;
         self.swapchain = self
@@ -274,16 +202,34 @@ impl State {
             .create_swap_chain(&self.surface, &self.swapchain_desc);
         self.depth_texture =
             texture::Texture::new_depth_texture(&self.device, &self.swapchain_desc);
-        self.camera
-            .update_aspect(new_size.width as f32, new_size.height as f32);
     }
 
-    pub fn redraw(&self) {
+    pub fn redraw(&mut self, entities: &EntitySystem) {
         let frame = match self.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
             Err(wgpu::SwapChainError::OutOfMemory) => panic!("Out of memory!"),
             Err(_) => return, // Handled on the next frame
         };
+
+        // Build view projection matrix from camera
+        let width = self.swapchain_desc.width as f32;
+        let height = self.swapchain_desc.height as f32;
+        self.uniforms.view_proj = if let Some(camera) = entities.get_selected_camera() {
+            camera
+                .build_view_projection_matrix((width, height).into())
+                .into()
+        } else {
+            self.default_camera
+                .build_view_projection_matrix((width, height).into())
+                .into()
+        };
+        self.queue.write_buffer(
+            &self.uniform_buffer,
+            0,
+            bytemuck::cast_slice(&[self.uniforms]),
+        );
+
+        // Build command buffer for the frame
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());

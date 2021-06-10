@@ -1,10 +1,21 @@
 use std::cmp::Ordering;
 
+// TODO implement iterators for generational index arrays
+
 /// Index into a [`GenerationalIndexArray`].
 #[derive(Clone, Copy)]
 pub struct GenerationalIndex {
     index: usize,
     generation: u64,
+}
+
+impl GenerationalIndex {
+    pub fn none() -> GenerationalIndex {
+        Self {
+            index: 0,
+            generation: 0,
+        }
+    }
 }
 
 /// Entry in a [`GenerationalIndexAllocator`].
@@ -53,7 +64,7 @@ impl GenerationalIndexAllocator {
         }
     }
 
-    /// Attempts to deallocate an index.
+    /// Attempt to deallocate an index.
     ///
     /// Returns `false` if the index was previously deallocated.
     pub fn deallocate(&mut self, index: GenerationalIndex) -> bool {
@@ -237,5 +248,14 @@ mod tests {
             assert_eq!(index.index, i);
             assert_eq!(index.generation, 1);
         }
+    }
+
+    #[test]
+    fn get_none_gives_none() {
+        let mut vec = GenerationalIndexVec::<u32>::new();
+        let none = GenerationalIndex::none();
+        let index0gen1 = index(0, 1);
+        vec.set(index0gen1, 5);
+        assert_eq!(vec.get(none), None);
     }
 }

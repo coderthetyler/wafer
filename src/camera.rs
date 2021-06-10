@@ -1,18 +1,17 @@
 use cgmath::{Angle, Deg, InnerSpace, Matrix4, Vector3};
 
-use crate::{input, time::Seconds};
+use crate::{geometry::AspectRatio, input::UserInputFrame, time::Seconds};
 
 pub trait Camera {
-    fn build_view_projection_matrix(&self) -> Matrix4<f32>;
-    fn update_aspect(&mut self, width: f32, height: f32);
-    fn update(&mut self, inputs: &input::Inputs, delta: Seconds);
+    // TODO camera shouldn't be tied to input, e.g. a camera owned by an AI or fixed sequence don't use user input
+    fn update(&mut self, input: &UserInputFrame, delta: Seconds);
+    fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32>;
 }
 
 pub struct FreeCamera {
     position: cgmath::Vector3<f32>,
     pitch: f32,
     yaw: f32,
-    aspect: f32,
     fovy: f32,
     znear: f32,
     zfar: f32,
@@ -21,12 +20,11 @@ pub struct FreeCamera {
 }
 
 impl FreeCamera {
-    pub fn new(speed: f32, width: u32, height: u32) -> Self {
+    pub fn new(speed: f32) -> Self {
         Self {
             position: (0.0, 0.0, 32.0).into(),
             pitch: 0.0,
             yaw: 180.0,
-            aspect: width as f32 / height as f32,
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
@@ -52,21 +50,17 @@ impl FreeCamera {
 }
 
 impl Camera for FreeCamera {
-    fn build_view_projection_matrix(&self) -> Matrix4<f32> {
+    fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32> {
         let view = Matrix4::from_angle_x(Deg(self.pitch))
             * Matrix4::from_angle_y(Deg(self.yaw))
             * Matrix4::from_translation(self.position);
-        let proj = cgmath::perspective(Deg(self.fovy), self.aspect, self.znear, self.zfar);
+        let proj = cgmath::perspective(Deg(self.fovy), aspect_ratio.into(), self.znear, self.zfar);
         proj * view
     }
 
-    fn update_aspect(&mut self, width: f32, height: f32) {
-        self.aspect = width / height;
-    }
-
-    fn update(&mut self, inputs: &input::Inputs, delta: Seconds) {
+    fn update(&mut self, input: &UserInputFrame, delta: Seconds) {
         let speed = self.speed * delta.as_f32();
-        let (yaw_delta, pitch_delta) = inputs.mouse_delta();
+        let (yaw_delta, pitch_delta) = input.mouse_delta();
         self.yaw += yaw_delta as f32 * self.sensitivity;
         self.yaw %= 360.0;
         self.pitch += pitch_delta as f32 * self.sensitivity;
@@ -79,22 +73,22 @@ impl Camera for FreeCamera {
         let up: Vector3<f32> = forward.cross(right).normalize();
 
         let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();
-        if inputs.is_forward_pressed {
+        if input.is_forward_pressed {
             delta += forward;
         }
-        if inputs.is_backward_pressed {
+        if input.is_backward_pressed {
             delta -= forward;
         }
-        if inputs.is_up_pressed {
+        if input.is_up_pressed {
             delta += up;
         }
-        if inputs.is_down_pressed {
+        if input.is_down_pressed {
             delta -= up;
         }
-        if inputs.is_right_pressed {
+        if input.is_right_pressed {
             delta += right;
         }
-        if inputs.is_left_pressed {
+        if input.is_left_pressed {
             delta -= right;
         }
         if delta.magnitude2() != 0.0 {

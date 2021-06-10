@@ -1,11 +1,18 @@
-use draw::State;
 use winit::event::VirtualKeyCode;
 use winit::event::WindowEvent;
 use winit::event_loop::ControlFlow;
 
+use crate::camera::FreeCamera;
+use crate::draw::DrawSystem;
+use crate::entity::EntitySystem;
+use crate::input::InputSystem;
+use crate::time::Timestamp;
+
 mod camera;
 mod draw;
+mod entity;
 mod generation;
+mod geometry;
 mod input;
 mod mesh;
 mod texture;
@@ -25,17 +32,30 @@ fn main() {
     window.set_cursor_grab(true).unwrap();
     window.set_cursor_visible(false);
     window.set_visible(true);
-    let mut state = futures::executor::block_on(State::new(&window));
+
+    let mut draw_system = futures::executor::block_on(DrawSystem::new(&window));
+    let mut input_system = InputSystem::new();
+    let mut entity_system = EntitySystem::new();
+    let main_camera = entity_system.create();
+    entity_system
+        .cameras
+        .set(main_camera, Box::new(FreeCamera::new(20.0)));
+    // TODO get camera working again :O
+    let mut last_time = Timestamp::now();
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-        if state.input(&window.id(), &event) {
+        if input_system.receive_events(&window.id(), &event) {
             return;
         }
         match event {
             Event::MainEventsCleared => window.request_redraw(),
             Event::RedrawRequested(window_id) if window_id == window.id() => {
-                state.update();
-                state.redraw();
+                let now = Timestamp::now();
+                let delta_time = now.delta(last_time);
+                last_time = now;
+                draw_system.redraw(&entity_system);
+                input_system.update(&mut entity_system);
             }
             Event::WindowEvent {
                 window_id,
@@ -43,9 +63,9 @@ fn main() {
             } if window.id() == window_id => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    state.resize(new_inner_size)
+                    draw_system.resize_surface(new_inner_size)
                 }
-                WindowEvent::Resized(ref new_size) => state.resize(new_size),
+                WindowEvent::Resized(ref new_size) => draw_system.resize_surface(new_size),
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let Some(VirtualKeyCode::Escape) = input.virtual_keycode {
                         *control_flow = ControlFlow::Exit
