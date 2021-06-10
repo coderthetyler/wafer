@@ -2,8 +2,7 @@ use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    camera::{Camera, FreeCamera},
-    entity::EntitySystem,
+    camera::Camera,
     geometry::AspectRatio,
     mesh::{Mesh, Uniforms, Vertex},
     texture,
@@ -53,7 +52,6 @@ pub struct DrawSystem {
     uniforms: Uniforms,
     uniform_buffer: wgpu::Buffer,
     uniform_group: wgpu::BindGroup,
-    default_camera: FreeCamera,
 }
 
 impl DrawSystem {
@@ -105,12 +103,8 @@ impl DrawSystem {
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
-        let default_camera = FreeCamera::new(20.0, 0.1);
-        let mut uniforms = Uniforms::new();
+        let uniforms = Uniforms::new();
         let aspect_ratio: AspectRatio = (width as f32, height as f32).into();
-        uniforms.view_proj = default_camera
-            .build_view_projection_matrix(aspect_ratio)
-            .into();
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[uniforms]),
@@ -190,7 +184,6 @@ impl DrawSystem {
             uniforms,
             uniform_buffer,
             uniform_group,
-            default_camera,
         }
     }
 
@@ -204,7 +197,7 @@ impl DrawSystem {
             texture::Texture::new_depth_texture(&self.device, &self.swapchain_desc);
     }
 
-    pub fn redraw(&mut self, entities: &EntitySystem) {
+    pub fn redraw(&mut self, camera: &dyn Camera) {
         let frame = match self.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
             Err(wgpu::SwapChainError::OutOfMemory) => panic!("Out of memory!"),
@@ -214,15 +207,9 @@ impl DrawSystem {
         // Build view projection matrix from camera
         let width = self.swapchain_desc.width as f32;
         let height = self.swapchain_desc.height as f32;
-        self.uniforms.view_proj = if let Some(camera) = entities.get_selected_camera() {
-            camera
-                .build_view_projection_matrix((width, height).into())
-                .into()
-        } else {
-            self.default_camera
-                .build_view_projection_matrix((width, height).into())
-                .into()
-        };
+        self.uniforms.view_proj = camera
+            .build_view_projection_matrix((width, height).into())
+            .into();
         self.queue.write_buffer(
             &self.uniform_buffer,
             0,

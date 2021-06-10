@@ -1,7 +1,10 @@
+use std::ops::DerefMut;
+
 use winit::event::VirtualKeyCode;
 use winit::event::WindowEvent;
 use winit::event_loop::ControlFlow;
 
+use crate::camera::Camera;
 use crate::camera::FreeCamera;
 use crate::draw::DrawSystem;
 use crate::entity::EntitySystem;
@@ -36,11 +39,14 @@ fn main() {
     let mut draw_system = futures::executor::block_on(DrawSystem::new(&window));
     let mut input_system = InputSystem::new();
     let mut entity_system = EntitySystem::new();
-    let main_camera = entity_system.create();
+
+    let player_camera = entity_system.create();
     entity_system
         .cameras
-        .set(main_camera, Box::new(FreeCamera::new(20.0, 0.1)));
-    entity_system.selected_camera = main_camera;
+        .set(player_camera, Box::new(FreeCamera::new(20.0, 0.1)));
+    entity_system.selected_camera = player_camera;
+
+    let mut default_camera = FreeCamera::new(10.0, 0.1);
 
     let mut last_time = Timestamp::now();
 
@@ -56,10 +62,15 @@ fn main() {
                 let delta_time = now.delta(last_time);
                 last_time = now;
                 input_system.update(&mut entity_system);
-                if let Some(camera) = entity_system.get_selected_camera_mut() {
-                    camera.update(&input_system.frame, delta_time);
-                }
-                draw_system.redraw(&entity_system);
+
+                let camera: &mut dyn Camera =
+                    if let Some(camera) = entity_system.get_selected_camera_mut() {
+                        camera.deref_mut()
+                    } else {
+                        &mut default_camera
+                    };
+                camera.update(&input_system.frame, delta_time);
+                draw_system.redraw(camera);
             }
             Event::WindowEvent {
                 window_id,
