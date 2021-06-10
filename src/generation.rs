@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
 
-// TODO implement iterators for generational index arrays
-
 /// Index into a [`GenerationalIndexArray`].
 #[derive(Clone, Copy)]
 pub struct GenerationalIndex {

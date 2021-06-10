@@ -11,7 +11,7 @@ pub struct UserInputFrame {
     pub is_backward_pressed: bool,
     pub is_left_pressed: bool,
     pub is_right_pressed: bool,
-    mouse_deltas: [(f64, f64); MOUSE_SMOOTH_FRAMES], // TODO use as ring buffer!
+    mouse_deltas: [(f64, f64); MOUSE_SMOOTH_FRAMES],
 }
 
 impl UserInputFrame {
@@ -67,8 +67,6 @@ impl InputSystem {
     }
 
     pub fn update(&mut self, entities: &mut EntitySystem) {
-        // TODO input receiver should receive all inputs and dispatch those to all entities with input components
-
         self.input.shift_mouse_deltas();
     }
 

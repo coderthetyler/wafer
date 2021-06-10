@@ -99,7 +99,7 @@ impl DrawSystem {
         chunk.randomize();
         let chunk_mesh = chunk.build_mesh();
         let mesh_buffers: Vec<IndexedVertexBuffer> =
-            vec![IndexedVertexBuffer::new(&device, chunk_mesh)]; // TODO remove chunk & mesh buffers from draw system, grab drawcomponents from entity system instead
+            vec![IndexedVertexBuffer::new(&device, chunk_mesh)];
         let vertex_layout = wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,

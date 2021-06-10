@@ -40,7 +40,7 @@ fn main() {
     entity_system
         .cameras
         .set(main_camera, Box::new(FreeCamera::new(20.0)));
-    // TODO get camera working again :O
+
     let mut last_time = Timestamp::now();
 
     event_loop.run(move |event, _, control_flow| {

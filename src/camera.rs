@@ -3,7 +3,6 @@ use cgmath::{Angle, Deg, InnerSpace, Matrix4, Vector3};
 use crate::{geometry::AspectRatio, input::UserInputFrame, time::Seconds};
 
 pub trait Camera {
-    // TODO camera shouldn't be tied to input, e.g. a camera owned by an AI or fixed sequence don't use user input
     fn update(&mut self, input: &UserInputFrame, delta: Seconds);
     fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32>;
 }

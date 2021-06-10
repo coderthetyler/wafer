@@ -48,5 +48,3 @@ impl EntitySystem {
         self.entity_allocator.allocate()
     }
 }
-
-// TODO gonna want a way to quickly query all entities that have some subset of components
