@@ -19,7 +19,7 @@ pub struct EntitySystem {
     pub positions: EntityMap<Position>,
     pub draws: EntityMap<DrawComponent>,
     pub inputs: EntityMap<InputComponent>,
-    pub cameras: EntityMap<Box<dyn Camera>>,
+    pub cameras: EntityMap<Camera>,
 
     // State
     pub selected_camera: Entity,
@@ -43,11 +43,11 @@ impl EntitySystem {
         self.entity_allocator.iter()
     }
 
-    pub fn get_selected_camera(&self) -> Option<&Box<dyn Camera>> {
+    pub fn get_selected_camera(&self) -> Option<&Camera> {
         self.cameras.get(self.selected_camera)
     }
 
-    pub fn get_selected_camera_mut(&mut self) -> Option<&mut Box<dyn Camera>> {
+    pub fn get_selected_camera_mut(&mut self) -> Option<&mut Camera> {
         self.cameras.get_mut(self.selected_camera)
     }
 

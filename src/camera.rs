@@ -2,12 +2,12 @@ use cgmath::{Angle, Deg, InnerSpace, Matrix4, Vector3};
 
 use crate::{geometry::AspectRatio, input::UserInputFrame, time::Seconds};
 
-pub trait Camera {
-    fn update(&mut self, input: &UserInputFrame, delta: Seconds);
-    fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32>;
+pub enum CameraAction {
+    Free,
 }
 
-pub struct FreeCamera {
+pub struct Camera {
+    action: CameraAction,
     position: cgmath::Vector3<f32>,
     pitch: f32,
     yaw: f32,
@@ -18,9 +18,16 @@ pub struct FreeCamera {
     sensitivity: f32,
 }
 
-impl FreeCamera {
-    pub fn new(speed: f32, sensitivity: f32) -> Self {
+impl Camera {
+    pub fn new(speed: f32, sensitivity: f32, action: CameraAction) -> Self {
+        match action {
+            CameraAction::Free => Camera::new_free_camera(speed, sensitivity),
+        }
+    }
+
+    pub fn new_free_camera(speed: f32, sensitivity: f32) -> Self {
         Self {
+            action: CameraAction::Free,
             position: (0.0, 0.0, 32.0).into(),
             pitch: 0.0,
             yaw: 180.0,
@@ -29,6 +36,20 @@ impl FreeCamera {
             zfar: 100.0,
             speed,
             sensitivity,
+        }
+    }
+
+    pub fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32> {
+        let view = Matrix4::from_angle_x(Deg(self.pitch))
+            * Matrix4::from_angle_y(Deg(self.yaw))
+            * Matrix4::from_translation(self.position);
+        let proj = cgmath::perspective(Deg(self.fovy), aspect_ratio.into(), self.znear, self.zfar);
+        proj * view
+    }
+
+    pub fn update(&mut self, input: &UserInputFrame, delta: Seconds) {
+        match self.action {
+            CameraAction::Free => self.update_free(input, delta),
         }
     }
 
@@ -46,18 +67,9 @@ impl FreeCamera {
         let yaw = Deg(-self.yaw);
         [-yaw.cos(), 0.0, yaw.sin()]
     }
-}
 
-impl Camera for FreeCamera {
-    fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32> {
-        let view = Matrix4::from_angle_x(Deg(self.pitch))
-            * Matrix4::from_angle_y(Deg(self.yaw))
-            * Matrix4::from_translation(self.position);
-        let proj = cgmath::perspective(Deg(self.fovy), aspect_ratio.into(), self.znear, self.zfar);
-        proj * view
-    }
-
-    fn update(&mut self, input: &UserInputFrame, delta: Seconds) {
+    /// Update as a free camera
+    fn update_free(&mut self, input: &UserInputFrame, delta: Seconds) {
         let speed = self.speed * delta.as_f32();
         let (yaw_delta, pitch_delta) = input.mouse_delta();
         self.yaw += yaw_delta as f32 * self.sensitivity;

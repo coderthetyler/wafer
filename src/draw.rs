@@ -197,7 +197,7 @@ impl DrawSystem {
             texture::Texture::new_depth_texture(&self.device, &self.swapchain_desc);
     }
 
-    pub fn redraw(&mut self, camera: &dyn Camera) {
+    pub fn redraw(&mut self, camera: &Camera) {
         let frame = match self.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
             Err(wgpu::SwapChainError::OutOfMemory) => panic!("Out of memory!"),
