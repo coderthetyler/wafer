@@ -39,7 +39,8 @@ fn main() {
     let main_camera = entity_system.create();
     entity_system
         .cameras
-        .set(main_camera, Box::new(FreeCamera::new(20.0)));
+        .set(main_camera, Box::new(FreeCamera::new(20.0, 0.1)));
+    entity_system.selected_camera = main_camera;
 
     let mut last_time = Timestamp::now();
 
@@ -54,8 +55,11 @@ fn main() {
                 let now = Timestamp::now();
                 let delta_time = now.delta(last_time);
                 last_time = now;
-                draw_system.redraw(&entity_system);
                 input_system.update(&mut entity_system);
+                if let Some(camera) = entity_system.get_selected_camera_mut() {
+                    camera.update(&input_system.frame, delta_time);
+                }
+                draw_system.redraw(&entity_system);
             }
             Event::WindowEvent {
                 window_id,

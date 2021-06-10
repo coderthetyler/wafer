@@ -105,7 +105,7 @@ impl DrawSystem {
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
-        let default_camera = FreeCamera::new(20.0);
+        let default_camera = FreeCamera::new(20.0, 0.1);
         let mut uniforms = Uniforms::new();
         let aspect_ratio: AspectRatio = (width as f32, height as f32).into();
         uniforms.view_proj = default_camera

@@ -56,18 +56,18 @@ impl UserInputFrame {
 }
 
 pub struct InputSystem {
-    input: UserInputFrame,
+    pub frame: UserInputFrame,
 }
 
 impl InputSystem {
     pub fn new() -> Self {
         Self {
-            input: UserInputFrame::new(),
+            frame: UserInputFrame::new(),
         }
     }
 
     pub fn update(&mut self, entities: &mut EntitySystem) {
-        self.input.shift_mouse_deltas();
+        self.frame.shift_mouse_deltas();
     }
 
     #[allow(clippy::collapsible_match)]
@@ -79,7 +79,7 @@ impl InputSystem {
         match event {
             winit::event::Event::DeviceEvent { ref event, .. } => match event {
                 winit::event::DeviceEvent::MouseMotion { delta } => {
-                    self.input.inc_mouse_delta(delta);
+                    self.frame.inc_mouse_delta(delta);
                     true
                 }
                 _ => false,
@@ -98,30 +98,30 @@ impl InputSystem {
                         let is_pressed = *state == winit::event::ElementState::Pressed;
                         match keycode {
                             winit::event::VirtualKeyCode::Space => {
-                                self.input.is_up_pressed = is_pressed;
+                                self.frame.is_up_pressed = is_pressed;
                                 true
                             }
                             winit::event::VirtualKeyCode::LShift => {
-                                self.input.is_down_pressed = is_pressed;
+                                self.frame.is_down_pressed = is_pressed;
                                 true
                             }
                             winit::event::VirtualKeyCode::W | winit::event::VirtualKeyCode::Up => {
-                                self.input.is_forward_pressed = is_pressed;
+                                self.frame.is_forward_pressed = is_pressed;
                                 true
                             }
                             winit::event::VirtualKeyCode::A
                             | winit::event::VirtualKeyCode::Left => {
-                                self.input.is_left_pressed = is_pressed;
+                                self.frame.is_left_pressed = is_pressed;
                                 true
                             }
                             winit::event::VirtualKeyCode::S
                             | winit::event::VirtualKeyCode::Down => {
-                                self.input.is_backward_pressed = is_pressed;
+                                self.frame.is_backward_pressed = is_pressed;
                                 true
                             }
                             winit::event::VirtualKeyCode::D
                             | winit::event::VirtualKeyCode::Right => {
-                                self.input.is_right_pressed = is_pressed;
+                                self.frame.is_right_pressed = is_pressed;
                                 true
                             }
                             _ => false,

@@ -19,7 +19,7 @@ pub struct FreeCamera {
 }
 
 impl FreeCamera {
-    pub fn new(speed: f32) -> Self {
+    pub fn new(speed: f32, sensitivity: f32) -> Self {
         Self {
             position: (0.0, 0.0, 32.0).into(),
             pitch: 0.0,
@@ -28,7 +28,7 @@ impl FreeCamera {
             znear: 0.1,
             zfar: 100.0,
             speed,
-            sensitivity: 1.0 / 7.0,
+            sensitivity,
         }
     }
 

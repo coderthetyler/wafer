@@ -1,13 +1,16 @@
 use crate::{
     camera::Camera,
     draw::DrawComponent,
-    generation::{GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexVec},
+    generation::{
+        GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexIter, GenerationalIndexVec,
+    },
     geometry::Position,
     input::InputComponent,
 };
 
 pub type Entity = GenerationalIndex;
 pub type EntityMap<T> = GenerationalIndexVec<T>;
+pub type EntityIter<'map> = GenerationalIndexIter<'map>;
 
 pub struct EntitySystem {
     entity_allocator: GenerationalIndexAllocator,
@@ -36,8 +39,16 @@ impl EntitySystem {
         }
     }
 
+    pub fn iter(&self) -> EntityIter {
+        self.entity_allocator.iter()
+    }
+
     pub fn get_selected_camera(&self) -> Option<&Box<dyn Camera>> {
         self.cameras.get(self.selected_camera)
+    }
+
+    pub fn get_selected_camera_mut(&mut self) -> Option<&mut Box<dyn Camera>> {
+        self.cameras.get_mut(self.selected_camera)
     }
 
     pub fn kill(&mut self, entity: Entity) -> bool {
