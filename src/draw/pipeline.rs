@@ -1,44 +1,11 @@
 use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{
-    camera::Camera,
-    geometry::AspectRatio,
-    mesh::{Mesh, Uniforms, Vertex},
-    texture,
-    voxel::Chunk,
-};
+use crate::{camera::Camera, draw::primitives::ColorVertex, planets::chunk::Chunk, texture};
 
-pub struct DrawComponent {
-    mesh: IndexedVertexBuffer,
-}
+use super::buffer::{IndexedVertexBuffer, Uniforms};
 
-struct IndexedVertexBuffer {
-    vertices: wgpu::Buffer,
-    indices: wgpu::Buffer,
-    index_count: u32,
-}
-
-impl IndexedVertexBuffer {
-    pub fn new(device: &wgpu::Device, mesh: Mesh) -> Self {
-        let index_count = mesh.indices.len() as u32;
-        let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&mesh.vertices),
-            usage: wgpu::BufferUsage::VERTEX,
-        });
-        let indices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&mesh.indices),
-            usage: wgpu::BufferUsage::INDEX,
-        });
-        Self {
-            vertices,
-            indices,
-            index_count,
-        }
-    }
-}
+pub struct DrawComponent {}
 
 pub struct DrawSystem {
     surface: wgpu::Surface,
@@ -92,19 +59,16 @@ impl DrawSystem {
             flags: wgpu::ShaderFlags::all(),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
-
-        let mut chunk = Chunk::new(0, 0, 0);
+        let mut chunk = Chunk::new([0, 0, 0].into());
         chunk.randomize();
         let chunk_mesh = chunk.build_mesh();
-        let mesh_buffers: Vec<IndexedVertexBuffer> =
-            vec![IndexedVertexBuffer::new(&device, chunk_mesh)];
+        let mesh_buffers = vec![IndexedVertexBuffer::new(&device, chunk_mesh)];
         let vertex_layout = wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<ColorVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
         let uniforms = Uniforms::new();
-        let aspect_ratio: AspectRatio = (width as f32, height as f32).into();
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[uniforms]),
@@ -180,10 +144,10 @@ impl DrawSystem {
             swapchain,
             depth_texture,
             pipeline,
-            mesh_buffers,
             uniforms,
             uniform_buffer,
             uniform_group,
+            mesh_buffers,
         }
     }
 

@@ -1,13 +1,13 @@
 use cgmath::{Angle, Deg, InnerSpace, Matrix4, Vector3};
 
-use crate::{geometry::AspectRatio, input::UserInputFrame, time::Seconds};
+use crate::{input::UserInputFrame, time::Seconds};
 
-pub enum CameraAction {
+pub enum CameraMode {
     Free,
 }
 
 pub struct Camera {
-    action: CameraAction,
+    action: CameraMode,
     position: cgmath::Vector3<f32>,
     pitch: f32,
     yaw: f32,
@@ -19,15 +19,15 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(speed: f32, sensitivity: f32, action: CameraAction) -> Self {
+    pub fn new(speed: f32, sensitivity: f32, action: CameraMode) -> Self {
         match action {
-            CameraAction::Free => Camera::new_free_camera(speed, sensitivity),
+            CameraMode::Free => Camera::new_free_camera(speed, sensitivity),
         }
     }
 
     pub fn new_free_camera(speed: f32, sensitivity: f32) -> Self {
         Self {
-            action: CameraAction::Free,
+            action: CameraMode::Free,
             position: (0.0, 0.0, 32.0).into(),
             pitch: 0.0,
             yaw: 180.0,
@@ -49,7 +49,7 @@ impl Camera {
 
     pub fn update(&mut self, input: &UserInputFrame, delta: Seconds) {
         match self.action {
-            CameraAction::Free => self.update_free(input, delta),
+            CameraMode::Free => self.update_free(input, delta),
         }
     }
 
@@ -106,5 +106,25 @@ impl Camera {
             let delta = speed * delta.normalize();
             self.position += delta;
         }
+    }
+}
+
+pub struct AspectRatio(f32);
+
+impl From<(f32, f32)> for AspectRatio {
+    fn from((width, height): (f32, f32)) -> Self {
+        AspectRatio(width / height)
+    }
+}
+
+impl From<f32> for AspectRatio {
+    fn from(aspect_ratio: f32) -> Self {
+        AspectRatio(aspect_ratio)
+    }
+}
+
+impl From<AspectRatio> for f32 {
+    fn from(aspect_ratio: AspectRatio) -> Self {
+        aspect_ratio.0
     }
 }

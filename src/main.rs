@@ -3,7 +3,7 @@ use winit::event::WindowEvent;
 use winit::event_loop::ControlFlow;
 
 use crate::camera::Camera;
-use crate::draw::DrawSystem;
+use crate::draw::pipeline::DrawSystem;
 use crate::entity::EntitySystem;
 use crate::input::InputSystem;
 use crate::time::Timestamp;
@@ -14,10 +14,9 @@ mod entity;
 mod generation;
 mod geometry;
 mod input;
-mod mesh;
+mod planets;
 mod texture;
 mod time;
-mod voxel;
 
 fn main() {
     use winit::event::Event;

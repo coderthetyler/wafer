@@ -1,11 +1,9 @@
 use crate::{
     camera::Camera,
-    draw::DrawComponent,
     generation::{
         GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexIter, GenerationalIndexVec,
     },
     geometry::Position,
-    input::InputComponent,
 };
 
 pub type Entity = GenerationalIndex;
@@ -17,8 +15,6 @@ pub struct EntitySystem {
 
     // Components
     pub positions: EntityMap<Position>,
-    pub draws: EntityMap<DrawComponent>,
-    pub inputs: EntityMap<InputComponent>,
     pub cameras: EntityMap<Camera>,
 
     // State
@@ -31,8 +27,6 @@ impl EntitySystem {
             entity_allocator: GenerationalIndexAllocator::new(),
 
             positions: EntityMap::new(),
-            draws: EntityMap::new(),
-            inputs: EntityMap::new(),
             cameras: EntityMap::new(),
 
             selected_camera: Entity::none(),

@@ -2,8 +2,6 @@ use crate::entity::EntitySystem;
 
 const MOUSE_SMOOTH_FRAMES: usize = 4;
 
-pub struct InputComponent {}
-
 pub struct UserInputFrame {
     pub is_up_pressed: bool,
     pub is_down_pressed: bool,
