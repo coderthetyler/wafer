@@ -1,18 +1,16 @@
 use cgmath::{Angle, Deg, InnerSpace, Matrix4, Vector3};
 
-use crate::{input, time::Seconds};
+use crate::{input::UserInputFrame, time::Seconds};
 
-pub trait Camera {
-    fn build_view_projection_matrix(&self) -> Matrix4<f32>;
-    fn update_aspect(&mut self, width: f32, height: f32);
-    fn update(&mut self, inputs: &input::Inputs, delta: Seconds);
+pub enum CameraMode {
+    Free,
 }
 
-pub struct FreeCamera {
+pub struct Camera {
+    action: CameraMode,
     position: cgmath::Vector3<f32>,
     pitch: f32,
     yaw: f32,
-    aspect: f32,
     fovy: f32,
     znear: f32,
     zfar: f32,
@@ -20,18 +18,38 @@ pub struct FreeCamera {
     sensitivity: f32,
 }
 
-impl FreeCamera {
-    pub fn new(speed: f32, width: u32, height: u32) -> Self {
+impl Camera {
+    pub fn new(speed: f32, sensitivity: f32, action: CameraMode) -> Self {
+        match action {
+            CameraMode::Free => Camera::new_free_camera(speed, sensitivity),
+        }
+    }
+
+    pub fn new_free_camera(speed: f32, sensitivity: f32) -> Self {
         Self {
+            action: CameraMode::Free,
             position: (0.0, 0.0, 32.0).into(),
             pitch: 0.0,
             yaw: 180.0,
-            aspect: width as f32 / height as f32,
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
             speed,
-            sensitivity: 1.0 / 7.0,
+            sensitivity,
+        }
+    }
+
+    pub fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32> {
+        let view = Matrix4::from_angle_x(Deg(self.pitch))
+            * Matrix4::from_angle_y(Deg(self.yaw))
+            * Matrix4::from_translation(self.position);
+        let proj = cgmath::perspective(Deg(self.fovy), aspect_ratio.into(), self.znear, self.zfar);
+        proj * view
+    }
+
+    pub fn update(&mut self, input: &UserInputFrame, delta: Seconds) {
+        match self.action {
+            CameraMode::Free => self.update_free(input, delta),
         }
     }
 
@@ -49,24 +67,11 @@ impl FreeCamera {
         let yaw = Deg(-self.yaw);
         [-yaw.cos(), 0.0, yaw.sin()]
     }
-}
 
-impl Camera for FreeCamera {
-    fn build_view_projection_matrix(&self) -> Matrix4<f32> {
-        let view = Matrix4::from_angle_x(Deg(self.pitch))
-            * Matrix4::from_angle_y(Deg(self.yaw))
-            * Matrix4::from_translation(self.position);
-        let proj = cgmath::perspective(Deg(self.fovy), self.aspect, self.znear, self.zfar);
-        proj * view
-    }
-
-    fn update_aspect(&mut self, width: f32, height: f32) {
-        self.aspect = width / height;
-    }
-
-    fn update(&mut self, inputs: &input::Inputs, delta: Seconds) {
+    /// Update as a free camera
+    fn update_free(&mut self, input: &UserInputFrame, delta: Seconds) {
         let speed = self.speed * delta.as_f32();
-        let (yaw_delta, pitch_delta) = inputs.mouse_delta();
+        let (yaw_delta, pitch_delta) = input.mouse_delta();
         self.yaw += yaw_delta as f32 * self.sensitivity;
         self.yaw %= 360.0;
         self.pitch += pitch_delta as f32 * self.sensitivity;
@@ -79,27 +84,47 @@ impl Camera for FreeCamera {
         let up: Vector3<f32> = forward.cross(right).normalize();
 
         let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();
-        if inputs.is_forward_pressed {
+        if input.is_forward_pressed {
             delta += forward;
         }
-        if inputs.is_backward_pressed {
+        if input.is_backward_pressed {
             delta -= forward;
         }
-        if inputs.is_up_pressed {
+        if input.is_up_pressed {
             delta += up;
         }
-        if inputs.is_down_pressed {
+        if input.is_down_pressed {
             delta -= up;
         }
-        if inputs.is_right_pressed {
+        if input.is_right_pressed {
             delta += right;
         }
-        if inputs.is_left_pressed {
+        if input.is_left_pressed {
             delta -= right;
         }
         if delta.magnitude2() != 0.0 {
             let delta = speed * delta.normalize();
             self.position += delta;
         }
+    }
+}
+
+pub struct AspectRatio(f32);
+
+impl From<(f32, f32)> for AspectRatio {
+    fn from((width, height): (f32, f32)) -> Self {
+        AspectRatio(width / height)
+    }
+}
+
+impl From<f32> for AspectRatio {
+    fn from(aspect_ratio: f32) -> Self {
+        AspectRatio(aspect_ratio)
+    }
+}
+
+impl From<AspectRatio> for f32 {
+    fn from(aspect_ratio: AspectRatio) -> Self {
+        aspect_ratio.0
     }
 }

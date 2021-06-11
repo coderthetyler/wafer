@@ -1,19 +1,18 @@
-use crate::time::{Seconds, Timestamp};
+use crate::entity::EntitySystem;
 
 const MOUSE_SMOOTH_FRAMES: usize = 4;
 
-pub struct Inputs {
+pub struct UserInputFrame {
     pub is_up_pressed: bool,
     pub is_down_pressed: bool,
     pub is_forward_pressed: bool,
     pub is_backward_pressed: bool,
     pub is_left_pressed: bool,
     pub is_right_pressed: bool,
-    last_time: Timestamp,
-    mouse_deltas: [(f64, f64); MOUSE_SMOOTH_FRAMES], // TODO use as ring buffer!
+    mouse_deltas: [(f64, f64); MOUSE_SMOOTH_FRAMES],
 }
 
-impl Inputs {
+impl UserInputFrame {
     pub fn new() -> Self {
         Self {
             is_up_pressed: false,
@@ -23,15 +22,7 @@ impl Inputs {
             is_left_pressed: false,
             is_right_pressed: false,
             mouse_deltas: [(0.0, 0.0); MOUSE_SMOOTH_FRAMES],
-            last_time: Timestamp::now(),
         }
-    }
-
-    pub fn inc_mouse_delta(&mut self, delta: &(f64, f64)) {
-        self.mouse_deltas[0] = (
-            self.mouse_deltas[0].0 + delta.0,
-            self.mouse_deltas[0].1 + delta.1,
-        );
     }
 
     pub fn mouse_delta(&self) -> (f64, f64) {
@@ -47,17 +38,97 @@ impl Inputs {
         (delta.0 / total_weight, delta.1 / total_weight)
     }
 
-    pub fn end_frame(&mut self) {
+    fn inc_mouse_delta(&mut self, delta: &(f64, f64)) {
+        self.mouse_deltas[0] = (
+            self.mouse_deltas[0].0 + delta.0,
+            self.mouse_deltas[0].1 + delta.1,
+        );
+    }
+
+    fn shift_mouse_deltas(&mut self) {
         for i in (1..MOUSE_SMOOTH_FRAMES).rev() {
             self.mouse_deltas[i] = self.mouse_deltas[i - 1];
         }
         self.mouse_deltas[0] = (0.0, 0.0);
     }
+}
 
-    pub fn start_frame(&mut self) -> Seconds {
-        let now = Timestamp::now();
-        let delta_s = now.delta(self.last_time);
-        self.last_time = now;
-        delta_s
+pub struct InputSystem {
+    pub frame: UserInputFrame,
+}
+
+impl InputSystem {
+    pub fn new() -> Self {
+        Self {
+            frame: UserInputFrame::new(),
+        }
+    }
+
+    pub fn update(&mut self, entities: &mut EntitySystem) {
+        self.frame.shift_mouse_deltas();
+    }
+
+    #[allow(clippy::collapsible_match)]
+    pub fn receive_events(
+        &mut self,
+        src_window: &winit::window::WindowId,
+        event: &winit::event::Event<()>,
+    ) -> bool {
+        match event {
+            winit::event::Event::DeviceEvent { ref event, .. } => match event {
+                winit::event::DeviceEvent::MouseMotion { delta } => {
+                    self.frame.inc_mouse_delta(delta);
+                    true
+                }
+                _ => false,
+            },
+            winit::event::Event::WindowEvent { window_id, event } if src_window == window_id => {
+                match event {
+                    winit::event::WindowEvent::KeyboardInput {
+                        input:
+                            winit::event::KeyboardInput {
+                                state,
+                                virtual_keycode: Some(keycode),
+                                ..
+                            },
+                        ..
+                    } => {
+                        let is_pressed = *state == winit::event::ElementState::Pressed;
+                        match keycode {
+                            winit::event::VirtualKeyCode::Space => {
+                                self.frame.is_up_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::LShift => {
+                                self.frame.is_down_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::W | winit::event::VirtualKeyCode::Up => {
+                                self.frame.is_forward_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::A
+                            | winit::event::VirtualKeyCode::Left => {
+                                self.frame.is_left_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::S
+                            | winit::event::VirtualKeyCode::Down => {
+                                self.frame.is_backward_pressed = is_pressed;
+                                true
+                            }
+                            winit::event::VirtualKeyCode::D
+                            | winit::event::VirtualKeyCode::Right => {
+                                self.frame.is_right_pressed = is_pressed;
+                                true
+                            }
+                            _ => false,
+                        }
+                    }
+                    _ => false,
+                }
+            }
+            _ => false,
+        }
     }
 }
