@@ -19,12 +19,6 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(speed: f32, sensitivity: f32, action: CameraMode) -> Self {
-        match action {
-            CameraMode::Free => Camera::new_free_camera(speed, sensitivity),
-        }
-    }
-
     pub fn new_free_camera(speed: f32, sensitivity: f32) -> Self {
         Self {
             action: CameraMode::Free,

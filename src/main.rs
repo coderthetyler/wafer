@@ -3,7 +3,7 @@ use winit::event::WindowEvent;
 use winit::event_loop::ControlFlow;
 
 use crate::camera::Camera;
-use crate::draw::pipeline::DrawSystem;
+use crate::draw::DrawSystem;
 use crate::entity::EntitySystem;
 use crate::input::InputSystem;
 use crate::time::Timestamp;

@@ -1,8 +1,8 @@
 use std::ops::Add;
 
 use crate::{
-    draw::primitives::{ColorVertex, Mesh},
-    geometry::{Vec3f, Vec3i},
+    draw::{ColorVertex, Mesh},
+    geometry::Vec3f,
 };
 
 use super::voxel::Voxel;
