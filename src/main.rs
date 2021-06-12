@@ -9,6 +9,7 @@ use crate::input::InputSystem;
 use crate::time::Timestamp;
 
 mod camera;
+mod console;
 mod draw;
 mod entity;
 mod generation;
