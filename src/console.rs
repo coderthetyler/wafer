@@ -6,6 +6,8 @@ struct CursorPosition(usize);
 pub struct Console {
     cursor: CursorPosition,
     text: AsciiString,
+    backwards: Vec<AsciiString>,
+    forwards: Vec<AsciiString>,
 }
 
 impl Console {
@@ -13,7 +15,14 @@ impl Console {
         Self {
             cursor: CursorPosition(0),
             text: AsciiString::new(),
+            backwards: vec![],
+            forwards: vec![],
         }
+    }
+
+    /// Text currently entered at the command line
+    pub fn get_text(&self) -> &AsciiString {
+        &self.text
     }
 
     /// Insert some subtext at the specified index in the console text.
@@ -32,7 +41,7 @@ impl Console {
 
     pub fn clear(&mut self) {
         self.text.clear();
-        self.cursor.0 = 0;
+        self.cursor = CursorPosition(0);
     }
 
     /// Shift the cursor one character to the left, if possible.
@@ -51,14 +60,56 @@ impl Console {
 
     /// Shift the cursor to the beginning of the text.
     pub fn shift_home(&mut self) {
-        self.cursor.0 = 0;
+        self.cursor = CursorPosition(0);
     }
 
     /// Shift the cursor to the end of the text.
     pub fn shift_end(&mut self) {
-        self.cursor.0 = self.text.len();
+        self.cursor = CursorPosition(self.text.len());
+    }
+
+    /// Attempt to construct a command from the console text.
+    /// Returns `None` if the text is an unrecognized command.
+    /// The console is cleared regardless of success & the text is recorded in the history.
+    pub fn submit(&mut self) -> Option<ConsoleCommand> {
+        if self.text.is_empty() {
+            None
+        } else {
+            self.backwards.push(self.text.clone());
+            self.forwards.clear();
+            self.clear();
+            None
+            // TODO how do i want to design the command type..?
+        }
+    }
+
+    /// Go back in time up the history stack, if possible.
+    /// If we're already at the top, then do nothing.
+    pub fn navigate_backwards(&mut self) {
+        if let Some(text) = self.backwards.pop() {
+            if !self.text.is_empty() {
+                self.forwards.push(self.text.clone());
+            }
+            self.text = text;
+            self.cursor = CursorPosition(self.text.len());
+        }
+    }
+
+    /// Go forward in time down the history stack, if possible.
+    /// If we're already at the bottom, then do nothing.
+    pub fn navigate_forwards(&mut self) {
+        if let Some(text) = self.forwards.pop() {
+            if !self.text.is_empty() {
+                self.backwards.push(self.text.clone());
+            }
+            self.text = text;
+            self.cursor = CursorPosition(self.text.len());
+        }
     }
 }
+
+#[derive(PartialEq, Debug)]
+pub enum ConsoleCommand {}
 
 #[cfg(test)]
 mod test {
@@ -193,5 +244,28 @@ mod test {
         console.insert(AsciiChar::X);
         console.insert(AsciiChar::Y);
         assert_eq!(AsciiString::from_ascii("XY").unwrap(), console.text);
+    }
+
+    #[test]
+    fn submit_noop_with_empty_text() {
+        let mut console = Console::new();
+        assert_eq!(None, console.submit());
+    }
+
+    #[test]
+    fn submit_adds_history() {
+        let mut console = Console::new();
+        console.insert(AsciiChar::A);
+        console.submit();
+        console.navigate_backwards();
+        assert_eq!(AsciiString::from_ascii("A").unwrap(), console.text);
+    }
+
+    #[test]
+    fn submit_clears_text() {
+        let mut console = Console::new();
+        console.insert(AsciiChar::A);
+        console.submit();
+        assert!(console.text.is_empty());
     }
 }
