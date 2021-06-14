@@ -6,6 +6,8 @@ use crate::{
     time::Seconds,
 };
 
+use super::ContextAction;
+
 pub struct CameraInputContext {
     camera: Entity,
     is_up_pressed: bool,
@@ -103,14 +105,14 @@ impl CameraInputContext {
     }
 
     #[allow(clippy::collapsible_match)]
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> bool {
+    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> ContextAction {
         match event {
             winit::event::Event::DeviceEvent { ref event, .. } => match event {
                 winit::event::DeviceEvent::MouseMotion { delta } => {
                     self.inc_mouse_delta(delta);
-                    true
+                    return ContextAction::ConsumedEvent;
                 }
-                _ => false,
+                _ => {}
             },
             winit::event::Event::WindowEvent { window_id, event } if windowid == window_id => {
                 match event {
@@ -127,38 +129,39 @@ impl CameraInputContext {
                         match keycode {
                             winit::event::VirtualKeyCode::Space => {
                                 self.is_up_pressed = is_pressed;
-                                true
+                                return ContextAction::ConsumedEvent;
                             }
                             winit::event::VirtualKeyCode::LShift => {
                                 self.is_down_pressed = is_pressed;
-                                true
+                                return ContextAction::ConsumedEvent;
                             }
                             winit::event::VirtualKeyCode::W | winit::event::VirtualKeyCode::Up => {
                                 self.is_forward_pressed = is_pressed;
-                                true
+                                return ContextAction::ConsumedEvent;
                             }
                             winit::event::VirtualKeyCode::A
                             | winit::event::VirtualKeyCode::Left => {
                                 self.is_left_pressed = is_pressed;
-                                true
+                                return ContextAction::ConsumedEvent;
                             }
                             winit::event::VirtualKeyCode::S
                             | winit::event::VirtualKeyCode::Down => {
                                 self.is_backward_pressed = is_pressed;
-                                true
+                                return ContextAction::ConsumedEvent;
                             }
                             winit::event::VirtualKeyCode::D
                             | winit::event::VirtualKeyCode::Right => {
                                 self.is_right_pressed = is_pressed;
-                                true
+                                return ContextAction::ConsumedEvent;
                             }
-                            _ => false,
+                            _ => {}
                         }
                     }
-                    _ => false,
+                    _ => {}
                 }
             }
-            _ => false,
+            _ => {}
         }
+        ContextAction::UnconsumedEvent
     }
 }
