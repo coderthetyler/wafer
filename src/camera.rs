@@ -1,27 +1,19 @@
-use cgmath::{Angle, Deg, InnerSpace, Matrix4, Vector3};
-
-use crate::{input::UserInputFrame, time::Seconds};
-
-pub enum CameraMode {
-    Free,
-}
+use cgmath::{Angle, Deg, Matrix4};
 
 pub struct Camera {
-    action: CameraMode,
-    position: cgmath::Vector3<f32>,
-    pitch: f32,
-    yaw: f32,
-    fovy: f32,
-    znear: f32,
-    zfar: f32,
-    speed: f32,
-    sensitivity: f32,
+    pub position: cgmath::Vector3<f32>,
+    pub pitch: f32,
+    pub yaw: f32,
+    pub fovy: f32,
+    pub znear: f32,
+    pub zfar: f32,
+    pub speed: f32,
+    pub sensitivity: f32,
 }
 
 impl Camera {
-    pub fn new_free_camera(speed: f32, sensitivity: f32) -> Self {
+    pub fn new(speed: f32, sensitivity: f32) -> Self {
         Self {
-            action: CameraMode::Free,
             position: (0.0, 0.0, 32.0).into(),
             pitch: 0.0,
             yaw: 180.0,
@@ -33,21 +25,7 @@ impl Camera {
         }
     }
 
-    pub fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32> {
-        let view = Matrix4::from_angle_x(Deg(self.pitch))
-            * Matrix4::from_angle_y(Deg(self.yaw))
-            * Matrix4::from_translation(self.position);
-        let proj = cgmath::perspective(Deg(self.fovy), aspect_ratio.into(), self.znear, self.zfar);
-        proj * view
-    }
-
-    pub fn update(&mut self, input: &UserInputFrame, delta: Seconds) {
-        match self.action {
-            CameraMode::Free => self.update_free(input, delta),
-        }
-    }
-
-    fn get_forward_vector(&self) -> [f32; 3] {
+    pub fn get_forward_vector(&self) -> [f32; 3] {
         let yaw = Deg(-self.yaw);
         let pitch = Deg(-self.pitch);
         [
@@ -57,49 +35,17 @@ impl Camera {
         ]
     }
 
-    fn get_right_vector(&self) -> [f32; 3] {
+    pub fn get_right_vector(&self) -> [f32; 3] {
         let yaw = Deg(-self.yaw);
         [-yaw.cos(), 0.0, yaw.sin()]
     }
 
-    /// Update as a free camera
-    fn update_free(&mut self, input: &UserInputFrame, delta: Seconds) {
-        let speed = self.speed * delta.as_f32();
-        let (yaw_delta, pitch_delta) = input.mouse_delta();
-        self.yaw += yaw_delta as f32 * self.sensitivity;
-        self.yaw %= 360.0;
-        self.pitch += pitch_delta as f32 * self.sensitivity;
-        self.pitch = self.pitch.min(90.0).max(-90.0);
-
-        let forward: Vector3<f32> = self.get_forward_vector().into();
-        let forward = forward.normalize();
-        let right: Vector3<f32> = self.get_right_vector().into();
-        let right = right.normalize();
-        let up: Vector3<f32> = forward.cross(right).normalize();
-
-        let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();
-        if input.is_forward_pressed {
-            delta += forward;
-        }
-        if input.is_backward_pressed {
-            delta -= forward;
-        }
-        if input.is_up_pressed {
-            delta += up;
-        }
-        if input.is_down_pressed {
-            delta -= up;
-        }
-        if input.is_right_pressed {
-            delta += right;
-        }
-        if input.is_left_pressed {
-            delta -= right;
-        }
-        if delta.magnitude2() != 0.0 {
-            let delta = speed * delta.normalize();
-            self.position += delta;
-        }
+    pub fn build_view_projection_matrix(&self, aspect_ratio: AspectRatio) -> Matrix4<f32> {
+        let view = Matrix4::from_angle_x(Deg(self.pitch))
+            * Matrix4::from_angle_y(Deg(self.yaw))
+            * Matrix4::from_translation(self.position);
+        let proj = cgmath::perspective(Deg(self.fovy), aspect_ratio.into(), self.znear, self.zfar);
+        proj * view
     }
 }
 

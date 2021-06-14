@@ -5,6 +5,7 @@ use winit::event_loop::ControlFlow;
 use crate::camera::Camera;
 use crate::draw::DrawSystem;
 use crate::entity::EntitySystem;
+use crate::input::CameraInputContext;
 use crate::input::InputSystem;
 use crate::time::Timestamp;
 
@@ -34,22 +35,24 @@ fn main() {
     window.set_visible(true);
 
     let mut draw_system = futures::executor::block_on(DrawSystem::new(&window));
-    let mut input_system = InputSystem::new();
     let mut entity_system = EntitySystem::new();
 
     let player_camera = entity_system.create();
     entity_system
         .cameras
-        .set(player_camera, Camera::new_free_camera(20.0, 0.1));
+        .set(player_camera, Camera::new(20.0, 0.1));
     entity_system.selected_camera = player_camera;
 
-    let mut default_camera = Camera::new_free_camera(10.0, 0.1);
+    let mut input_system = InputSystem::new();
+    input_system.push_context(CameraInputContext::new(player_camera).into());
+
+    let mut fallback_camera = Camera::new(10.0, 0.1);
 
     let mut last_time = Timestamp::now();
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-        if input_system.receive_events(&window.id(), &event) {
+        if input_system.receive_event(&window.id(), &event) {
             return;
         }
         match event {
@@ -58,12 +61,10 @@ fn main() {
                 let now = Timestamp::now();
                 let delta_time = now.delta(last_time);
                 last_time = now;
-                input_system.update(&mut entity_system);
-
+                input_system.update(&mut entity_system, delta_time);
                 let camera = entity_system
                     .get_selected_camera_mut()
-                    .unwrap_or(&mut default_camera);
-                camera.update(&input_system.frame, delta_time);
+                    .unwrap_or(&mut fallback_camera);
                 draw_system.redraw(camera);
             }
             Event::WindowEvent {
