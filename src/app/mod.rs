@@ -54,21 +54,12 @@ impl Application {
         }
     }
 
-    pub fn perform_action(&mut self, action: Action) {
-        match action {
-            Action::NoOp => {}
-            Action::None => {}
-            Action::Console(action) => action.perform(self),
-            Action::InputSystem(action) => action.perform(self),
-        }
-    }
-
     pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
         let action = self.input_system.receive_event(&self.window.id(), event);
         if let Action::None = action {
-            self.process_app_events(event, control_flow)
+            self.process_app_events(event, control_flow);
         } else {
-            self.perform_action(action)
+            action.perform(self);
         }
     }
 
@@ -103,9 +94,8 @@ impl Application {
                         *control_flow = ControlFlow::Exit
                     }
                     if let Some(VirtualKeyCode::T) = input.virtual_keycode {
-                        self.perform_action(Action::InputSystem(InputSystemAction::PushContext(
-                            ConsoleInputContext::new().into(),
-                        )))
+                        InputSystemAction::PushContext(ConsoleInputContext::new().into())
+                            .perform(self)
                     }
                 }
                 _ => {}

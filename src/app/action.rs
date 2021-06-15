@@ -16,6 +16,17 @@ pub enum Action {
     Console(ConsoleAction),
 }
 
+impl Action {
+    pub fn perform(self, app: &mut Application) {
+        match self {
+            Action::None => {}
+            Action::NoOp => {}
+            Action::InputSystem(action) => action.perform(app),
+            Action::Console(action) => action.perform(app),
+        }
+    }
+}
+
 pub enum InputSystemAction {
     /// Pop the current input context.
     PopContext,
