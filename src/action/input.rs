@@ -1,5 +1,7 @@
 use crate::{app::Application, input::InputContext};
 
+use super::Action;
+
 pub enum InputSystemAction {
     /// Pop the current input context.
     PopContext,
@@ -8,14 +10,16 @@ pub enum InputSystemAction {
 }
 
 impl InputSystemAction {
-    pub fn perform(self, app: &mut Application) {
+    pub(super) fn perform(self, app: &mut Application) -> Action {
         match self {
-            InputSystemAction::PopContext => {
-                app.input_system.pop_context();
-            }
-            InputSystemAction::PushContext(context) => {
-                app.input_system.push_context(context);
-            }
+            InputSystemAction::PopContext => app.input_system.pop_context(),
+            InputSystemAction::PushContext(context) => app.input_system.push_context(context),
         }
+    }
+}
+
+impl From<InputSystemAction> for Action {
+    fn from(action: InputSystemAction) -> Self {
+        Action::InputSystem(action)
     }
 }

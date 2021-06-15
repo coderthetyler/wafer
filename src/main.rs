@@ -1,5 +1,5 @@
 use app::Application;
-use winit::event_loop::ControlFlow;
+use winit::{event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
 
 mod action;
 mod app;
@@ -15,8 +15,8 @@ mod texture;
 mod time;
 
 fn main() {
-    let event_loop = winit::event_loop::EventLoop::new();
-    let window = winit::window::WindowBuilder::new()
+    let event_loop = EventLoop::new();
+    let window = WindowBuilder::new()
         .with_title("voxel-planet")
         .with_visible(false)
         .build(&event_loop)

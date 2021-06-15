@@ -1,11 +1,16 @@
 use cgmath::{InnerSpace, Vector3};
-use winit::{event::Event, window::WindowId};
+use winit::{
+    event::{DeviceEvent, ElementState, Event, VirtualKeyCode, WindowEvent},
+    window::WindowId,
+};
 
 use crate::{
-    action::Action,
+    action::{Action, InputSystemAction, WindowAction},
     entity::{Entity, EntitySystem},
     time::Seconds,
 };
+
+use super::ConsoleInputContext;
 
 pub struct CameraInputContext {
     camera: Entity,
@@ -61,7 +66,7 @@ impl CameraInputContext {
         self.mouse_deltas[0] = (0.0, 0.0);
     }
 
-    pub fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
+    pub(super) fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
         if let Some(camera) = entities.cameras.get_mut(self.camera) {
             let speed = camera.speed * delta.as_f32();
             let (yaw_delta, pitch_delta) = self.mouse_delta();
@@ -103,62 +108,66 @@ impl CameraInputContext {
         self.shift_mouse_deltas();
     }
 
+    pub(super) fn on_active(&mut self) -> Action {
+        Action::Window(WindowAction::GrabCursor)
+    }
+
     #[allow(clippy::collapsible_match, clippy::single_match)]
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
+    pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
         match event {
-            winit::event::Event::DeviceEvent { ref event, .. } => match event {
-                winit::event::DeviceEvent::MouseMotion { delta } => {
+            Event::DeviceEvent { ref event, .. } => match event {
+                DeviceEvent::MouseMotion { delta } => {
                     self.inc_mouse_delta(delta);
                     return Action::NoOp;
                 }
                 _ => {}
             },
-            winit::event::Event::WindowEvent { window_id, event } if windowid == window_id => {
-                match event {
-                    winit::event::WindowEvent::KeyboardInput {
-                        input:
-                            winit::event::KeyboardInput {
-                                state,
-                                virtual_keycode: Some(keycode),
-                                ..
-                            },
-                        ..
-                    } => {
-                        let is_pressed = *state == winit::event::ElementState::Pressed;
-                        match keycode {
-                            winit::event::VirtualKeyCode::Space => {
-                                self.is_up_pressed = is_pressed;
-                                return Action::NoOp;
-                            }
-                            winit::event::VirtualKeyCode::LShift => {
-                                self.is_down_pressed = is_pressed;
-                                return Action::NoOp;
-                            }
-                            winit::event::VirtualKeyCode::W | winit::event::VirtualKeyCode::Up => {
-                                self.is_forward_pressed = is_pressed;
-                                return Action::NoOp;
-                            }
-                            winit::event::VirtualKeyCode::A
-                            | winit::event::VirtualKeyCode::Left => {
-                                self.is_left_pressed = is_pressed;
-                                return Action::NoOp;
-                            }
-                            winit::event::VirtualKeyCode::S
-                            | winit::event::VirtualKeyCode::Down => {
-                                self.is_backward_pressed = is_pressed;
-                                return Action::NoOp;
-                            }
-                            winit::event::VirtualKeyCode::D
-                            | winit::event::VirtualKeyCode::Right => {
-                                self.is_right_pressed = is_pressed;
-                                return Action::NoOp;
-                            }
-                            _ => {}
+            Event::WindowEvent { window_id, event } if windowid == window_id => match event {
+                WindowEvent::KeyboardInput {
+                    input:
+                        winit::event::KeyboardInput {
+                            state,
+                            virtual_keycode: Some(keycode),
+                            ..
+                        },
+                    ..
+                } => {
+                    let is_pressed = *state == ElementState::Pressed;
+                    match keycode {
+                        VirtualKeyCode::T => {
+                            return Action::InputSystem(InputSystemAction::PushContext(
+                                ConsoleInputContext::new().into(),
+                            ));
                         }
+                        VirtualKeyCode::Space => {
+                            self.is_up_pressed = is_pressed;
+                            return Action::NoOp;
+                        }
+                        VirtualKeyCode::LShift => {
+                            self.is_down_pressed = is_pressed;
+                            return Action::NoOp;
+                        }
+                        VirtualKeyCode::W => {
+                            self.is_forward_pressed = is_pressed;
+                            return Action::NoOp;
+                        }
+                        VirtualKeyCode::A => {
+                            self.is_left_pressed = is_pressed;
+                            return Action::NoOp;
+                        }
+                        VirtualKeyCode::S => {
+                            self.is_backward_pressed = is_pressed;
+                            return Action::NoOp;
+                        }
+                        VirtualKeyCode::D => {
+                            self.is_right_pressed = is_pressed;
+                            return Action::NoOp;
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
-            }
+                _ => {}
+            },
             _ => {}
         }
         Action::None

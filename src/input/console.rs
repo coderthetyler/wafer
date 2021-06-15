@@ -5,7 +5,7 @@ use winit::{
 };
 
 use crate::{
-    action::{Action, ConsoleAction, InputSystemAction},
+    action::{Action, ConsoleAction, InputSystemAction, WindowAction},
     entity::EntitySystem,
     time::Seconds,
 };
@@ -17,8 +17,12 @@ impl ConsoleInputContext {
         Self {}
     }
 
+    pub(super) fn on_active(&mut self) -> Action {
+        Action::Window(WindowAction::UngrabCursor)
+    }
+
     #[allow(clippy::single_match, clippy::collapsible_match)]
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
+    pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
         match event {
             Event::WindowEvent { window_id, event } if windowid == window_id => match event {
                 WindowEvent::ReceivedCharacter(received_char) => {
@@ -68,5 +72,5 @@ impl ConsoleInputContext {
         Action::None
     }
 
-    pub fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {}
+    pub(super) fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {}
 }

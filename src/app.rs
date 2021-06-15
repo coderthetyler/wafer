@@ -1,5 +1,5 @@
 use winit::{
-    event::{Event, VirtualKeyCode, WindowEvent},
+    event::{ElementState, Event, VirtualKeyCode, WindowEvent},
     event_loop::ControlFlow,
     window::Window,
 };
@@ -15,7 +15,7 @@ use crate::{
 };
 
 pub struct Application {
-    window: Window,
+    pub window: Window,
     pub console: Console,
     pub draw_system: DrawSystem,
     pub entity_system: EntitySystem,
@@ -27,28 +27,27 @@ pub struct Application {
 impl Application {
     pub async fn new(window: Window) -> Self {
         let draw_system = DrawSystem::new(&window).await;
-
-        let mut entity_system = EntitySystem::new();
-        let player_camera = entity_system.create();
-        entity_system
-            .cameras
-            .set(player_camera, Camera::new(20.0, 0.1));
-        entity_system.selected_camera = player_camera;
-
-        let mut input_system = InputSystem::new();
-        input_system.push_context(CameraInputContext::new(player_camera).into());
-
-        let console = Console::new();
-
-        Application {
+        let mut app = Application {
             window,
-            console,
+            console: Console::new(),
             draw_system,
-            entity_system,
-            input_system,
+            entity_system: EntitySystem::new(),
+            input_system: InputSystem::new(),
             fallback_camera: Camera::new(10.0, 0.1),
             last_frame: Timestamp::now(),
-        }
+        };
+
+        let player_camera = app.entity_system.create();
+        app.entity_system
+            .cameras
+            .set(player_camera, Camera::new(20.0, 0.1));
+        app.entity_system.selected_camera = player_camera;
+
+        app.input_system
+            .push_context(CameraInputContext::new(player_camera).into())
+            .perform(&mut app);
+
+        app
     }
 
     pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
@@ -88,11 +87,9 @@ impl Application {
                 WindowEvent::Resized(ref new_size) => self.draw_system.resize_surface(new_size),
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let Some(VirtualKeyCode::Escape) = input.virtual_keycode {
-                        *control_flow = ControlFlow::Exit
-                    }
-                    if let Some(VirtualKeyCode::T) = input.virtual_keycode {
-                        InputSystemAction::PushContext(ConsoleInputContext::new().into())
-                            .perform(self)
+                        if let ElementState::Pressed = input.state {
+                            *control_flow = ControlFlow::Exit
+                        }
                     }
                 }
                 _ => {}
