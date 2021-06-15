@@ -2,11 +2,10 @@ use cgmath::{InnerSpace, Vector3};
 use winit::{event::Event, window::WindowId};
 
 use crate::{
+    app::action::Action,
     entity::{Entity, EntitySystem},
     time::Seconds,
 };
-
-use super::ContextAction;
 
 pub struct CameraInputContext {
     camera: Entity,
@@ -104,13 +103,13 @@ impl CameraInputContext {
         self.shift_mouse_deltas();
     }
 
-    #[allow(clippy::collapsible_match)]
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> ContextAction {
+    #[allow(clippy::collapsible_match, clippy::single_match)]
+    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
         match event {
             winit::event::Event::DeviceEvent { ref event, .. } => match event {
                 winit::event::DeviceEvent::MouseMotion { delta } => {
                     self.inc_mouse_delta(delta);
-                    return ContextAction::ConsumedEvent;
+                    return Action::NoOp;
                 }
                 _ => {}
             },
@@ -129,30 +128,30 @@ impl CameraInputContext {
                         match keycode {
                             winit::event::VirtualKeyCode::Space => {
                                 self.is_up_pressed = is_pressed;
-                                return ContextAction::ConsumedEvent;
+                                return Action::NoOp;
                             }
                             winit::event::VirtualKeyCode::LShift => {
                                 self.is_down_pressed = is_pressed;
-                                return ContextAction::ConsumedEvent;
+                                return Action::NoOp;
                             }
                             winit::event::VirtualKeyCode::W | winit::event::VirtualKeyCode::Up => {
                                 self.is_forward_pressed = is_pressed;
-                                return ContextAction::ConsumedEvent;
+                                return Action::NoOp;
                             }
                             winit::event::VirtualKeyCode::A
                             | winit::event::VirtualKeyCode::Left => {
                                 self.is_left_pressed = is_pressed;
-                                return ContextAction::ConsumedEvent;
+                                return Action::NoOp;
                             }
                             winit::event::VirtualKeyCode::S
                             | winit::event::VirtualKeyCode::Down => {
                                 self.is_backward_pressed = is_pressed;
-                                return ContextAction::ConsumedEvent;
+                                return Action::NoOp;
                             }
                             winit::event::VirtualKeyCode::D
                             | winit::event::VirtualKeyCode::Right => {
                                 self.is_right_pressed = is_pressed;
-                                return ContextAction::ConsumedEvent;
+                                return Action::NoOp;
                             }
                             _ => {}
                         }
@@ -162,6 +161,6 @@ impl CameraInputContext {
             }
             _ => {}
         }
-        ContextAction::UnconsumedEvent
+        Action::None
     }
 }

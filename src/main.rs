@@ -24,16 +24,6 @@ mod planets;
 mod texture;
 mod time;
 
-/*
-Console TODO
-
-- open console on 't'
-- draw console text
-- update console text on key presses
-- submit on Enter
-- navigate on up/down
-*/
-
 fn main() {
     let event_loop = winit::event_loop::EventLoop::new();
     let window = winit::window::WindowBuilder::new()

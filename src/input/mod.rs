@@ -1,7 +1,6 @@
-use winit::event::{VirtualKeyCode, WindowEvent};
 use winit::{event::Event, window::WindowId};
 
-use crate::console::Console;
+use crate::app::action::Action;
 use crate::{entity::EntitySystem, time::Seconds};
 
 pub use self::camera::CameraInputContext;
@@ -9,12 +8,6 @@ pub use self::console::ConsoleInputContext;
 
 mod camera;
 mod console;
-
-pub enum ContextAction {
-    Pop,
-    ConsumedEvent,
-    UnconsumedEvent,
-}
 
 pub struct InputSystem {
     context_stack: Vec<InputContext>,
@@ -46,36 +39,12 @@ impl InputSystem {
 
     /// Pass the `event` to the active input context, if any.
     /// Returns `true` if the context consumed the event.
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> bool {
-        if self.should_open_console(windowid, event) {
-            // self.push_context(ConsoleInputContext::new(&self.console).into());
-            return true;
-        }
+    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
         if let Some(context) = self.context_stack.last_mut() {
-            match context.receive_event(windowid, event) {
-                ContextAction::ConsumedEvent => true,
-                ContextAction::Pop => {
-                    self.pop_context();
-                    true
-                }
-                ContextAction::UnconsumedEvent => false,
-            }
+            context.receive_event(windowid, event)
         } else {
-            false
+            Action::None
         }
-    }
-
-    fn should_open_console(&self, windowid: &WindowId, event: &Event<()>) -> bool {
-        if let Event::WindowEvent { window_id, event } = event {
-            if windowid == window_id {
-                if let WindowEvent::KeyboardInput { input, .. } = event {
-                    if let Some(VirtualKeyCode::T) = input.virtual_keycode {
-                        return true;
-                    }
-                }
-            }
-        }
-        false
     }
 }
 
@@ -85,7 +54,7 @@ pub enum InputContext {
 }
 
 impl InputContext {
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> ContextAction {
+    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
         match self {
             InputContext::Camera(context) => context.receive_event(windowid, event),
             InputContext::Console(context) => context.receive_event(windowid, event),

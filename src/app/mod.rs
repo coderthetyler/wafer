@@ -1,3 +1,4 @@
+use action::InputSystemAction;
 use winit::{
     event::{Event, VirtualKeyCode, WindowEvent},
     event_loop::ControlFlow,
@@ -5,15 +6,20 @@ use winit::{
 };
 
 use crate::{
+    app::action::Action,
     camera::Camera,
+    console::Console,
     draw::DrawSystem,
     entity::EntitySystem,
-    input::{CameraInputContext, InputSystem},
+    input::{CameraInputContext, ConsoleInputContext, InputSystem},
     time::Timestamp,
 };
 
+pub mod action;
+
 pub struct Application {
     window: Window,
+    console: Console,
     draw_system: DrawSystem,
     entity_system: EntitySystem,
     input_system: InputSystem,
@@ -35,8 +41,11 @@ impl Application {
         let mut input_system = InputSystem::new();
         input_system.push_context(CameraInputContext::new(player_camera).into());
 
+        let console = Console::new();
+
         Application {
             window,
+            console,
             draw_system,
             entity_system,
             input_system,
@@ -45,11 +54,22 @@ impl Application {
         }
     }
 
-    pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
-        if self.input_system.receive_event(&self.window.id(), event) {
-            return;
+    pub fn perform_action(&mut self, action: Action) {
+        match action {
+            Action::NoOp => {}
+            Action::None => {}
+            Action::Console(action) => action.perform(self),
+            Action::InputSystem(action) => action.perform(self),
         }
-        self.process_app_events(event, control_flow);
+    }
+
+    pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
+        let action = self.input_system.receive_event(&self.window.id(), event);
+        if let Action::None = action {
+            self.process_app_events(event, control_flow)
+        } else {
+            self.perform_action(action)
+        }
     }
 
     /// Process all top-level events that drive basic application behavior.
@@ -81,6 +101,11 @@ impl Application {
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let Some(VirtualKeyCode::Escape) = input.virtual_keycode {
                         *control_flow = ControlFlow::Exit
+                    }
+                    if let Some(VirtualKeyCode::T) = input.virtual_keycode {
+                        self.perform_action(Action::InputSystem(InputSystemAction::PushContext(
+                            ConsoleInputContext::new().into(),
+                        )))
                     }
                 }
                 _ => {}
