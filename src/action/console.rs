@@ -1,51 +1,6 @@
 use ascii::AsciiChar;
 
-use crate::input::InputContext;
-
-use super::Application;
-
-pub enum Action {
-    /// Indicates the absence of an action, semantically similar to [`Option::None`].
-    /// This is intended to indicate that an action producer was unable to produce one.
-    None,
-    /// Action that performs no operation.
-    NoOp,
-    /// An action scoped to the input system.
-    InputSystem(InputSystemAction),
-    /// An action scoped to the console.
-    Console(ConsoleAction),
-}
-
-impl Action {
-    pub fn perform(self, app: &mut Application) {
-        match self {
-            Action::None => {}
-            Action::NoOp => {}
-            Action::InputSystem(action) => action.perform(app),
-            Action::Console(action) => action.perform(app),
-        }
-    }
-}
-
-pub enum InputSystemAction {
-    /// Pop the current input context.
-    PopContext,
-    /// Push a new input context & make it active.
-    PushContext(InputContext),
-}
-
-impl InputSystemAction {
-    pub fn perform(self, app: &mut Application) {
-        match self {
-            InputSystemAction::PopContext => {
-                app.input_system.pop_context();
-            }
-            InputSystemAction::PushContext(context) => {
-                app.input_system.push_context(context);
-            }
-        }
-    }
-}
+use crate::app::Application;
 
 pub enum ConsoleAction {
     /// Insert a character into the console.

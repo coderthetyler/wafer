@@ -1,4 +1,3 @@
-use action::InputSystemAction;
 use winit::{
     event::{Event, VirtualKeyCode, WindowEvent},
     event_loop::ControlFlow,
@@ -6,7 +5,7 @@ use winit::{
 };
 
 use crate::{
-    app::action::Action,
+    action::{Action, InputSystemAction},
     camera::Camera,
     console::Console,
     draw::DrawSystem,
@@ -15,14 +14,12 @@ use crate::{
     time::Timestamp,
 };
 
-pub mod action;
-
 pub struct Application {
     window: Window,
-    console: Console,
-    draw_system: DrawSystem,
-    entity_system: EntitySystem,
-    input_system: InputSystem,
+    pub console: Console,
+    pub draw_system: DrawSystem,
+    pub entity_system: EntitySystem,
+    pub input_system: InputSystem,
     fallback_camera: Camera,
     last_frame: Timestamp,
 }

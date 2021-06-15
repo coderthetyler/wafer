@@ -2,7 +2,7 @@ use cgmath::{InnerSpace, Vector3};
 use winit::{event::Event, window::WindowId};
 
 use crate::{
-    app::action::Action,
+    action::Action,
     entity::{Entity, EntitySystem},
     time::Seconds,
 };

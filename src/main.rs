@@ -1,17 +1,7 @@
 use app::Application;
-use winit::event::Event;
-use winit::event::VirtualKeyCode;
-use winit::event::WindowEvent;
 use winit::event_loop::ControlFlow;
-use winit::window::Window;
 
-use crate::camera::Camera;
-use crate::draw::DrawSystem;
-use crate::entity::EntitySystem;
-use crate::input::CameraInputContext;
-use crate::input::InputSystem;
-use crate::time::Timestamp;
-
+mod action;
 mod app;
 mod camera;
 mod console;

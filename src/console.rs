@@ -1,6 +1,6 @@
 use ascii::{AsciiChar, AsciiString};
 
-use crate::app::action::Action;
+use crate::action::Action;
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 struct CursorPosition(usize);

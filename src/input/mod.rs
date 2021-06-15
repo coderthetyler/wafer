@@ -1,6 +1,6 @@
 use winit::{event::Event, window::WindowId};
 
-use crate::app::action::Action;
+use crate::action::Action;
 use crate::{entity::EntitySystem, time::Seconds};
 
 pub use self::camera::CameraInputContext;

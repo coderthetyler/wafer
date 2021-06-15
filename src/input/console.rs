@@ -5,7 +5,7 @@ use winit::{
 };
 
 use crate::{
-    app::action::{Action, ConsoleAction, InputSystemAction},
+    action::{Action, ConsoleAction, InputSystemAction},
     entity::EntitySystem,
     time::Seconds,
 };
