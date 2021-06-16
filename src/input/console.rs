@@ -10,6 +10,8 @@ use crate::{
     time::Seconds,
 };
 
+use super::EventAction;
+
 pub struct ConsoleInputContext {}
 
 impl ConsoleInputContext {
@@ -22,54 +24,39 @@ impl ConsoleInputContext {
     }
 
     #[allow(clippy::single_match, clippy::collapsible_match)]
-    pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
+    pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+        fn receive_virtual_keycode(code: VirtualKeyCode) -> EventAction {
+            match code {
+                VirtualKeyCode::Escape => Action::InputSystem(InputSystemAction::PopContext).into(),
+                VirtualKeyCode::Return => Action::Console(ConsoleAction::Submit).into(),
+                VirtualKeyCode::Delete => Action::Console(ConsoleAction::Backspace).into(),
+                VirtualKeyCode::Up => Action::Console(ConsoleAction::NavigateBackwards).into(),
+                VirtualKeyCode::Down => Action::Console(ConsoleAction::NavigateForwards).into(),
+                VirtualKeyCode::Left => Action::Console(ConsoleAction::ShiftLeft).into(),
+                VirtualKeyCode::Right => Action::Console(ConsoleAction::ShiftRight).into(),
+                VirtualKeyCode::Home => Action::Console(ConsoleAction::ShiftHome).into(),
+                VirtualKeyCode::End => Action::Console(ConsoleAction::ShiftEnd).into(),
+                _ => EventAction::Unconsumed,
+            }
+        }
         match event {
             Event::WindowEvent { window_id, event } if windowid == window_id => match event {
                 WindowEvent::ReceivedCharacter(received_char) => {
                     let ascii_char = AsciiChar::from_ascii(*received_char);
                     if let Ok(ascii_char) = ascii_char {
-                        return Action::Console(ConsoleAction::Insert(ascii_char));
+                        return Action::Console(ConsoleAction::Insert(ascii_char)).into();
                     }
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let Some(code) = input.virtual_keycode {
-                        match code {
-                            VirtualKeyCode::Escape => {
-                                return Action::InputSystem(InputSystemAction::PopContext);
-                            }
-                            VirtualKeyCode::Return => {
-                                return Action::Console(ConsoleAction::Submit);
-                            }
-                            VirtualKeyCode::Delete => {
-                                return Action::Console(ConsoleAction::Backspace);
-                            }
-                            VirtualKeyCode::Up => {
-                                return Action::Console(ConsoleAction::NavigateBackwards);
-                            }
-                            VirtualKeyCode::Down => {
-                                return Action::Console(ConsoleAction::NavigateForwards);
-                            }
-                            VirtualKeyCode::Left => {
-                                return Action::Console(ConsoleAction::ShiftLeft);
-                            }
-                            VirtualKeyCode::Right => {
-                                return Action::Console(ConsoleAction::ShiftRight);
-                            }
-                            VirtualKeyCode::Home => {
-                                return Action::Console(ConsoleAction::ShiftHome);
-                            }
-                            VirtualKeyCode::End => {
-                                return Action::Console(ConsoleAction::ShiftEnd);
-                            }
-                            _ => {}
-                        }
+                        return receive_virtual_keycode(code);
                     }
                 }
                 _ => {}
             },
             _ => {}
         }
-        Action::None
+        EventAction::Unconsumed
     }
 
     pub(super) fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {}

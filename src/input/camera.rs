@@ -10,7 +10,7 @@ use crate::{
     time::Seconds,
 };
 
-use super::ConsoleInputContext;
+use super::{ConsoleInputContext, EventAction};
 
 pub struct CameraInputContext {
     camera: Entity,
@@ -113,12 +113,12 @@ impl CameraInputContext {
     }
 
     #[allow(clippy::collapsible_match, clippy::single_match)]
-    pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
+    pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         match event {
             Event::DeviceEvent { ref event, .. } => match event {
                 DeviceEvent::MouseMotion { delta } => {
                     self.inc_mouse_delta(delta);
-                    return Action::NoOp;
+                    return EventAction::Consumed;
                 }
                 _ => {}
             },
@@ -137,31 +137,32 @@ impl CameraInputContext {
                         VirtualKeyCode::T => {
                             return Action::InputSystem(InputSystemAction::PushContext(
                                 ConsoleInputContext::new().into(),
-                            ));
+                            ))
+                            .into();
                         }
                         VirtualKeyCode::Space => {
                             self.is_up_pressed = is_pressed;
-                            return Action::NoOp;
+                            return EventAction::Consumed;
                         }
                         VirtualKeyCode::LShift => {
                             self.is_down_pressed = is_pressed;
-                            return Action::NoOp;
+                            return EventAction::Consumed;
                         }
                         VirtualKeyCode::W => {
                             self.is_forward_pressed = is_pressed;
-                            return Action::NoOp;
+                            return EventAction::Consumed;
                         }
                         VirtualKeyCode::A => {
                             self.is_left_pressed = is_pressed;
-                            return Action::NoOp;
+                            return EventAction::Consumed;
                         }
                         VirtualKeyCode::S => {
                             self.is_backward_pressed = is_pressed;
-                            return Action::NoOp;
+                            return EventAction::Consumed;
                         }
                         VirtualKeyCode::D => {
                             self.is_right_pressed = is_pressed;
-                            return Action::NoOp;
+                            return EventAction::Consumed;
                         }
                         _ => {}
                     }
@@ -170,6 +171,6 @@ impl CameraInputContext {
             },
             _ => {}
         }
-        Action::None
+        EventAction::Unconsumed
     }
 }

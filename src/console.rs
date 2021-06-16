@@ -80,7 +80,7 @@ impl Console {
             self.backwards.push(self.text.clone());
             self.forwards.clear();
             self.clear();
-            Some(Action::NoOp)
+            Some(Action::None)
         }
     }
 

@@ -5,12 +5,11 @@ use winit::{
 };
 
 use crate::{
-    action::{Action, InputSystemAction},
     camera::Camera,
     console::Console,
     draw::DrawSystem,
     entity::EntitySystem,
-    input::{CameraInputContext, ConsoleInputContext, InputSystem},
+    input::{CameraInputContext, EventAction, InputSystem},
     time::Timestamp,
 };
 
@@ -52,10 +51,16 @@ impl Application {
 
     pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
         let action = self.input_system.receive_event(&self.window.id(), event);
-        if let Action::None = action {
-            self.process_app_events(event, control_flow);
-        } else {
-            action.perform(self);
+        match action {
+            EventAction::Unconsumed => {
+                self.process_app_events(event, control_flow);
+            }
+            EventAction::Consumed => {
+                // Nothing to do if event was consumed without producing an action
+            }
+            EventAction::React(action) => {
+                action.perform(self);
+            }
         }
     }
 
@@ -64,18 +69,7 @@ impl Application {
     fn process_app_events(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
         match event {
             Event::MainEventsCleared => self.window.request_redraw(),
-            Event::RedrawRequested(window_id) if *window_id == self.window.id() => {
-                let now = Timestamp::now();
-                let delta_time = now.delta(self.last_frame);
-                self.last_frame = now;
-                self.input_system
-                    .update(&mut self.entity_system, delta_time);
-                let camera = self
-                    .entity_system
-                    .get_selected_camera()
-                    .unwrap_or(&self.fallback_camera);
-                self.draw_system.redraw(camera)
-            }
+            Event::RedrawRequested(window_id) if *window_id == self.window.id() => self.redraw(),
             Event::WindowEvent {
                 window_id,
                 ref event,
@@ -96,5 +90,18 @@ impl Application {
             },
             _ => {}
         }
+    }
+
+    fn redraw(&mut self) {
+        let now = Timestamp::now();
+        let delta_time = now.delta(self.last_frame);
+        self.last_frame = now;
+        self.input_system
+            .update(&mut self.entity_system, delta_time);
+        let camera = self
+            .entity_system
+            .get_selected_camera()
+            .unwrap_or(&self.fallback_camera);
+        self.draw_system.redraw(camera)
     }
 }

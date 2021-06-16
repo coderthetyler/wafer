@@ -32,10 +32,7 @@ impl ConsoleAction {
                 app.console.insert(char);
                 Action::None
             }
-            ConsoleAction::Submit => {
-                app.console.submit();
-                Action::None
-            }
+            ConsoleAction::Submit => app.console.submit().unwrap_or(Action::None),
             ConsoleAction::Backspace => {
                 app.console.backspace();
                 Action::None

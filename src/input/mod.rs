@@ -47,12 +47,27 @@ impl InputSystem {
 
     /// Pass the `event` to the active input context, if any.
     /// Returns `true` if the context consumed the event.
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
+    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         if let Some(context) = self.context_stack.last_mut() {
             context.receive_event(windowid, event)
         } else {
-            Action::None
+            EventAction::Unconsumed
         }
+    }
+}
+
+pub enum EventAction {
+    /// The input event was unprocessed by the context.
+    Unconsumed,
+    /// The input event was consumed by the context but produced no action.
+    Consumed,
+    /// The input event was consumed by the context and produced an action.
+    React(Action),
+}
+
+impl From<Action> for EventAction {
+    fn from(action: Action) -> Self {
+        EventAction::React(action)
     }
 }
 
@@ -69,7 +84,7 @@ impl InputContext {
         }
     }
 
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> Action {
+    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         match self {
             InputContext::Camera(context) => context.receive_event(windowid, event),
             InputContext::Console(context) => context.receive_event(windowid, event),
