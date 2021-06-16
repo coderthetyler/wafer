@@ -142,10 +142,8 @@ impl DrawSystem {
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let local_pool = futures::executor::LocalPool::new();
         let local_spawner = local_pool.spawner();
-        let font = wgpu_glyph::ab_glyph::FontArc::try_from_slice(include_bytes!(
-            "NovusGraecorumRegular.ttf"
-        ))
-        .unwrap();
+        let font =
+            wgpu_glyph::ab_glyph::FontArc::try_from_slice(include_bytes!("Tuffy.ttf")).unwrap();
         let glyph_brush =
             GlyphBrushBuilder::using_font(font).build(&device, wgpu::TextureFormat::Bgra8UnormSrgb);
 
