@@ -33,10 +33,12 @@ impl ConsoleAction {
     pub fn perform(self, app: &mut Application) {
         match self {
             ConsoleAction::Show => {
+                app.console.show();
                 let context = ConsoleInputContext::new();
                 app.input_system.push_context(context.into()).perform(app);
             }
             ConsoleAction::Hide => {
+                app.console.hide();
                 app.input_system.pop_context().perform(app);
             }
             ConsoleAction::Insert(char) => {

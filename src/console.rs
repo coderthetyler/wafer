@@ -10,6 +10,7 @@ pub struct Console {
     text: AsciiString,
     backwards: Vec<AsciiString>,
     forwards: Vec<AsciiString>,
+    is_showing: bool,
 }
 
 impl Console {
@@ -19,7 +20,20 @@ impl Console {
             text: AsciiString::new(),
             backwards: vec![],
             forwards: vec![],
+            is_showing: false,
         }
+    }
+
+    pub fn show(&mut self) {
+        self.is_showing = true;
+    }
+
+    pub fn hide(&mut self) {
+        self.is_showing = false;
+    }
+
+    pub fn is_showing(&self) -> bool {
+        self.is_showing
     }
 
     /// Text currently entered at the command line
@@ -80,7 +94,8 @@ impl Console {
             self.backwards.push(self.text.clone());
             self.forwards.clear();
             self.clear();
-            Some(Action::None)
+            // TODO parse console text into an action
+            None
         }
     }
 
