@@ -36,10 +36,7 @@ impl ConsoleAction {
                 let context = ConsoleInputContext::new();
                 app.input_system.push_context(context.into())
             }
-            ConsoleAction::Hide => {
-                // TODO remove
-                app.input_system.pop_context()
-            }
+            ConsoleAction::Hide => app.input_system.pop_context(),
             ConsoleAction::Insert(char) => {
                 app.console.insert(char);
                 Action::None

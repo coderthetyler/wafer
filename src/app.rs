@@ -1,5 +1,5 @@
 use winit::{
-    event::{ElementState, Event, VirtualKeyCode, WindowEvent},
+    event::{Event, WindowEvent},
     event_loop::ControlFlow,
     window::Window,
 };
@@ -19,6 +19,7 @@ pub struct Application {
     pub draw_system: DrawSystem,
     pub entity_system: EntitySystem,
     pub input_system: InputSystem,
+    pub close_requested: bool,
     fallback_camera: Camera,
     last_frame: Timestamp,
 }
@@ -34,6 +35,7 @@ impl Application {
             input_system: InputSystem::new(),
             fallback_camera: Camera::new(10.0, 0.1),
             last_frame: Timestamp::now(),
+            close_requested: false,
         };
 
         let player_camera = app.entity_system.create();
@@ -53,7 +55,7 @@ impl Application {
         let action = self.input_system.receive_event(&self.window.id(), event);
         match action {
             EventAction::Unconsumed => {
-                self.process_app_events(event, control_flow);
+                self.process_app_events(event);
             }
             EventAction::Consumed => {
                 // Nothing to do if event was consumed without producing an action
@@ -62,11 +64,14 @@ impl Application {
                 action.perform(self);
             }
         }
+        if self.close_requested {
+            *control_flow = ControlFlow::Exit;
+        }
     }
 
     /// Process all top-level events that drive basic application behavior.
     /// This includes window resizing and redraw requests, for example.
-    fn process_app_events(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
+    fn process_app_events(&mut self, event: &Event<()>) {
         match event {
             Event::MainEventsCleared => self.window.request_redraw(),
             Event::RedrawRequested(window_id) if *window_id == self.window.id() => self.redraw(),
@@ -74,18 +79,13 @@ impl Application {
                 window_id,
                 ref event,
             } if self.window.id() == *window_id => match event {
-                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                WindowEvent::CloseRequested => {
+                    self.close_requested = true;
+                }
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                     self.draw_system.resize_surface(new_inner_size)
                 }
                 WindowEvent::Resized(ref new_size) => self.draw_system.resize_surface(new_size),
-                WindowEvent::KeyboardInput { input, .. } => {
-                    if let Some(VirtualKeyCode::Escape) = input.virtual_keycode {
-                        if let ElementState::Pressed = input.state {
-                            *control_flow = ControlFlow::Exit
-                        }
-                    }
-                }
                 _ => {}
             },
             _ => {}

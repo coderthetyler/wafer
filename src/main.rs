@@ -1,5 +1,8 @@
 use app::Application;
-use winit::{event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
+use winit::{
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
 
 mod action;
 mod app;
