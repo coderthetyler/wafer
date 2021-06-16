@@ -5,7 +5,7 @@ use winit::{
 };
 
 use crate::{
-    action::{Action, ConsoleAction, InputSystemAction, WindowAction},
+    action::{Action, ConsoleAction, WindowAction},
     entity::EntitySystem,
     time::Seconds,
 };
@@ -27,7 +27,7 @@ impl ConsoleInputContext {
     pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         fn receive_virtual_keycode(code: VirtualKeyCode) -> EventAction {
             match code {
-                VirtualKeyCode::Escape => Action::InputSystem(InputSystemAction::PopContext).into(),
+                VirtualKeyCode::Escape => Action::Console(ConsoleAction::Hide).into(),
                 VirtualKeyCode::Return => Action::Console(ConsoleAction::Submit).into(),
                 VirtualKeyCode::Delete => Action::Console(ConsoleAction::Backspace).into(),
                 VirtualKeyCode::Up => Action::Console(ConsoleAction::NavigateBackwards).into(),

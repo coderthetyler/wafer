@@ -5,12 +5,12 @@ use winit::{
 };
 
 use crate::{
-    action::{Action, InputSystemAction, WindowAction},
+    action::{Action, ConsoleAction, WindowAction},
     entity::{Entity, EntitySystem},
     time::Seconds,
 };
 
-use super::{ConsoleInputContext, EventAction};
+use super::EventAction;
 
 pub struct CameraInputContext {
     camera: Entity,
@@ -118,59 +118,53 @@ impl CameraInputContext {
             Event::DeviceEvent { ref event, .. } => match event {
                 DeviceEvent::MouseMotion { delta } => {
                     self.inc_mouse_delta(delta);
-                    return EventAction::Consumed;
+                    EventAction::Consumed
                 }
-                _ => {}
+                _ => EventAction::Unconsumed,
             },
             Event::WindowEvent { window_id, event } if windowid == window_id => match event {
                 WindowEvent::KeyboardInput {
                     input:
                         winit::event::KeyboardInput {
                             state,
-                            virtual_keycode: Some(keycode),
+                            virtual_keycode: Some(key_code),
                             ..
                         },
                     ..
                 } => {
                     let is_pressed = *state == ElementState::Pressed;
-                    match keycode {
-                        VirtualKeyCode::T => {
-                            return Action::InputSystem(InputSystemAction::PushContext(
-                                ConsoleInputContext::new().into(),
-                            ))
-                            .into();
-                        }
+                    match key_code {
+                        VirtualKeyCode::T => Action::Console(ConsoleAction::Show).into(),
                         VirtualKeyCode::Space => {
                             self.is_up_pressed = is_pressed;
-                            return EventAction::Consumed;
+                            EventAction::Consumed
                         }
                         VirtualKeyCode::LShift => {
                             self.is_down_pressed = is_pressed;
-                            return EventAction::Consumed;
+                            EventAction::Consumed
                         }
                         VirtualKeyCode::W => {
                             self.is_forward_pressed = is_pressed;
-                            return EventAction::Consumed;
+                            EventAction::Consumed
                         }
                         VirtualKeyCode::A => {
                             self.is_left_pressed = is_pressed;
-                            return EventAction::Consumed;
+                            EventAction::Consumed
                         }
                         VirtualKeyCode::S => {
                             self.is_backward_pressed = is_pressed;
-                            return EventAction::Consumed;
+                            EventAction::Consumed
                         }
                         VirtualKeyCode::D => {
                             self.is_right_pressed = is_pressed;
-                            return EventAction::Consumed;
+                            EventAction::Consumed
                         }
-                        _ => {}
+                        _ => EventAction::Unconsumed,
                     }
                 }
-                _ => {}
+                _ => EventAction::Unconsumed,
             },
-            _ => {}
+            _ => EventAction::Unconsumed,
         }
-        EventAction::Unconsumed
     }
 }

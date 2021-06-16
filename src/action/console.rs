@@ -1,10 +1,14 @@
 use ascii::AsciiChar;
 
-use crate::app::Application;
+use crate::{app::Application, input::ConsoleInputContext};
 
 use super::Action;
 
 pub enum ConsoleAction {
+    /// Show the console.
+    Show,
+    /// Hide the console.
+    Hide,
     /// Insert a character into the console.
     Insert(AsciiChar),
     /// Remove a character from the console at the cursor position.
@@ -28,6 +32,14 @@ pub enum ConsoleAction {
 impl ConsoleAction {
     pub(super) fn perform(self, app: &mut Application) -> Action {
         match self {
+            ConsoleAction::Show => {
+                let context = ConsoleInputContext::new();
+                app.input_system.push_context(context.into())
+            }
+            ConsoleAction::Hide => {
+                // TODO remove
+                app.input_system.pop_context()
+            }
             ConsoleAction::Insert(char) => {
                 app.console.insert(char);
                 Action::None
