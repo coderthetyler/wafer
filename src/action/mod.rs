@@ -21,21 +21,17 @@ pub enum Action {
 
 impl Action {
     /// Perform & consume the action.
-    /// Sequenced actions are performed in order.
     pub fn perform(self, app: &mut Application) {
-        let mut next_action = self;
-        loop {
-            match next_action {
-                Action::None => break,
-                Action::Console(action) => {
-                    next_action = action.perform(app);
-                }
-                Action::Window(action) => {
-                    next_action = action.perform(app);
-                }
-                Action::App(action) => {
-                    next_action = action.perform(app);
-                }
+        match self {
+            Action::None => {}
+            Action::Console(action) => {
+                action.perform(app);
+            }
+            Action::Window(action) => {
+                action.perform(app);
+            }
+            Action::App(action) => {
+                action.perform(app);
             }
         }
     }

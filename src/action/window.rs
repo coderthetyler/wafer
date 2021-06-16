@@ -10,17 +10,15 @@ pub enum WindowAction {
 }
 
 impl WindowAction {
-    pub(super) fn perform(self, app: &mut Application) -> Action {
+    pub fn perform(self, app: &mut Application) {
         match self {
             WindowAction::GrabCursor => {
                 app.window.set_cursor_grab(true).unwrap();
                 app.window.set_cursor_visible(false);
-                Action::None
             }
             WindowAction::UngrabCursor => {
                 app.window.set_cursor_grab(false).unwrap();
                 app.window.set_cursor_visible(true);
-                Action::None
             }
         }
     }

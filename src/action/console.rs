@@ -30,45 +30,43 @@ pub enum ConsoleAction {
 }
 
 impl ConsoleAction {
-    pub(super) fn perform(self, app: &mut Application) -> Action {
+    pub fn perform(self, app: &mut Application) {
         match self {
             ConsoleAction::Show => {
                 let context = ConsoleInputContext::new();
-                app.input_system.push_context(context.into())
+                app.input_system.push_context(context.into()).perform(app);
             }
-            ConsoleAction::Hide => app.input_system.pop_context(),
+            ConsoleAction::Hide => {
+                app.input_system.pop_context().perform(app);
+            }
             ConsoleAction::Insert(char) => {
                 app.console.insert(char);
-                Action::None
             }
-            ConsoleAction::Submit => app.console.submit().unwrap_or(Action::None),
+            ConsoleAction::Submit => {
+                if let Some(action) = app.console.submit() {
+                    action.perform(app);
+                }
+            }
             ConsoleAction::Backspace => {
                 app.console.backspace();
-                Action::None
             }
             ConsoleAction::NavigateBackwards => {
                 app.console.navigate_backwards();
-                Action::None
             }
             ConsoleAction::NavigateForwards => {
                 app.console.navigate_forwards();
-                Action::None
             }
             ConsoleAction::ShiftLeft => {
                 app.console.shift_left();
-                Action::None
             }
             ConsoleAction::ShiftRight => {
                 app.console.shift_right();
-                Action::None
             }
             ConsoleAction::ShiftHome => {
                 app.console.shift_home();
-                Action::None
             }
             ConsoleAction::ShiftEnd => {
                 app.console.shift_end();
-                Action::None
             }
         }
     }

@@ -19,6 +19,10 @@ impl ConsoleInputContext {
         Self {}
     }
 
+    pub(super) fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
+        // TODO do input contexts really need this method?
+    }
+
     pub(super) fn on_active(&mut self) -> Action {
         Action::Window(WindowAction::UngrabCursor)
     }
@@ -58,6 +62,4 @@ impl ConsoleInputContext {
         }
         EventAction::Unconsumed
     }
-
-    pub(super) fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {}
 }

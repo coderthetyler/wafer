@@ -8,11 +8,10 @@ pub enum AppAction {
 }
 
 impl AppAction {
-    pub(super) fn perform(self, app: &mut Application) -> Action {
+    pub fn perform(self, app: &mut Application) {
         match self {
             AppAction::RequestClose => {
                 app.close_requested = true;
-                Action::None
             }
         }
     }
