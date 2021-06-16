@@ -8,9 +8,11 @@ mod app;
 mod console;
 mod window;
 
+pub trait ActionType {
+    fn perform(self, app: &mut Application);
+}
+
 pub enum Action {
-    /// An action that does nothing when performed.
-    None,
     /// An action scoped to the console.
     Console(ConsoleAction),
     /// An action scoped to the window.
@@ -19,11 +21,10 @@ pub enum Action {
     App(AppAction),
 }
 
-impl Action {
+impl ActionType for Action {
     /// Perform & consume the action.
-    pub fn perform(self, app: &mut Application) {
+    fn perform(self, app: &mut Application) {
         match self {
-            Action::None => {}
             Action::Console(action) => {
                 action.perform(app);
             }

@@ -2,7 +2,7 @@ use ascii::AsciiChar;
 
 use crate::{app::Application, input::ConsoleInputContext};
 
-use super::Action;
+use super::{Action, ActionType};
 
 pub enum ConsoleAction {
     /// Show the console.
@@ -29,17 +29,21 @@ pub enum ConsoleAction {
     ShiftEnd,
 }
 
-impl ConsoleAction {
-    pub fn perform(self, app: &mut Application) {
+impl ActionType for ConsoleAction {
+    fn perform(self, app: &mut Application) {
         match self {
             ConsoleAction::Show => {
                 app.console.show();
                 let context = ConsoleInputContext::new();
-                app.input_system.push_context(context.into()).perform(app);
+                if let Some(action) = app.input_system.push_context(context.into()) {
+                    action.perform(app);
+                }
             }
             ConsoleAction::Hide => {
                 app.console.hide();
-                app.input_system.pop_context().perform(app);
+                if let Some(action) = app.input_system.pop_context() {
+                    action.perform(app);
+                }
             }
             ConsoleAction::Insert(char) => {
                 app.console.insert(char);

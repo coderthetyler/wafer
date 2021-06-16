@@ -5,6 +5,7 @@ use winit::{
 };
 
 use crate::{
+    action::ActionType,
     camera::Camera,
     console::Console,
     draw::DrawSystem,
@@ -44,9 +45,12 @@ impl Application {
             .set(player_camera, Camera::new(20.0, 0.1));
         app.entity_system.selected_camera = player_camera;
 
-        app.input_system
+        if let Some(action) = app
+            .input_system
             .push_context(CameraInputContext::new(player_camera).into())
-            .perform(&mut app);
+        {
+            action.perform(&mut app);
+        }
 
         app
     }
@@ -55,7 +59,7 @@ impl Application {
         let action = self.input_system.receive_event(&self.window.id(), event);
         match action {
             EventAction::Unconsumed => {
-                self.process_app_events(event);
+                self.process_app_event(event);
             }
             EventAction::Consumed => {
                 // Nothing to do if event was consumed without producing an action
@@ -71,7 +75,7 @@ impl Application {
 
     /// Process all top-level events that drive basic application behavior.
     /// This includes window resizing and redraw requests, for example.
-    fn process_app_events(&mut self, event: &Event<()>) {
+    fn process_app_event(&mut self, event: &Event<()>) {
         match event {
             Event::MainEventsCleared => self.window.request_redraw(),
             Event::RedrawRequested(window_id) if *window_id == self.window.id() => self.redraw(),
@@ -102,6 +106,7 @@ impl Application {
             .entity_system
             .get_selected_camera()
             .unwrap_or(&self.fallback_camera);
-        self.draw_system.redraw(camera)
+        self.draw_system.redraw(camera);
+        // TODO draw console if it is showing
     }
 }

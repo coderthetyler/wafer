@@ -21,7 +21,7 @@ impl InputSystem {
     }
 
     /// Make the given `context` the top-most selected input context.
-    pub fn push_context(&mut self, context: InputContext) -> Action {
+    pub fn push_context(&mut self, context: InputContext) -> Option<Action> {
         let mut context = context;
         let action = context.on_active();
         self.context_stack.push(context);
@@ -29,12 +29,12 @@ impl InputSystem {
     }
 
     /// Remove the topmost input context from the priority stack, if any.
-    pub fn pop_context(&mut self) -> Action {
+    pub fn pop_context(&mut self) -> Option<Action> {
         self.context_stack.pop();
         if let Some(context) = self.context_stack.last_mut() {
             context.on_active()
         } else {
-            Action::None
+            None
         }
     }
 
@@ -71,27 +71,33 @@ impl From<Action> for EventAction {
     }
 }
 
+pub trait InputContextType {
+    fn on_active(&mut self) -> Option<Action>;
+    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction;
+    fn update(&mut self, entities: &mut EntitySystem, delta: Seconds);
+}
+
 pub enum InputContext {
     Camera(CameraInputContext),
     Console(ConsoleInputContext),
 }
 
-impl InputContext {
-    pub fn on_active(&mut self) -> Action {
+impl InputContextType for InputContext {
+    fn on_active(&mut self) -> Option<Action> {
         match self {
             InputContext::Camera(context) => context.on_active(),
             InputContext::Console(context) => context.on_active(),
         }
     }
 
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         match self {
             InputContext::Camera(context) => context.receive_event(windowid, event),
             InputContext::Console(context) => context.receive_event(windowid, event),
         }
     }
 
-    pub fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
+    fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
         match self {
             InputContext::Camera(context) => context.update(entities, delta),
             InputContext::Console(context) => context.update(entities, delta),

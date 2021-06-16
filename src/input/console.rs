@@ -10,7 +10,7 @@ use crate::{
     time::Seconds,
 };
 
-use super::EventAction;
+use super::{EventAction, InputContextType};
 
 pub struct ConsoleInputContext {}
 
@@ -18,17 +18,15 @@ impl ConsoleInputContext {
     pub fn new() -> Self {
         Self {}
     }
+}
 
-    pub(super) fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
-        // TODO do input contexts really need this method?
-    }
-
-    pub(super) fn on_active(&mut self) -> Action {
-        Action::Window(WindowAction::UngrabCursor)
+impl InputContextType for ConsoleInputContext {
+    fn on_active(&mut self) -> Option<Action> {
+        Some(Action::Window(WindowAction::UngrabCursor))
     }
 
     #[allow(clippy::single_match, clippy::collapsible_match)]
-    pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         fn receive_virtual_keycode(code: VirtualKeyCode) -> EventAction {
             match code {
                 VirtualKeyCode::Escape => Action::Console(ConsoleAction::Hide).into(),
@@ -61,5 +59,9 @@ impl ConsoleInputContext {
             _ => {}
         }
         EventAction::Unconsumed
+    }
+
+    fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
+        // TODO do input contexts really need this method?
     }
 }

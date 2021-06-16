@@ -10,7 +10,7 @@ use crate::{
     time::Seconds,
 };
 
-use super::EventAction;
+use super::{EventAction, InputContextType};
 
 pub struct CameraInputContext {
     camera: Entity,
@@ -65,55 +65,15 @@ impl CameraInputContext {
         }
         self.mouse_deltas[0] = (0.0, 0.0);
     }
+}
 
-    pub(super) fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
-        if let Some(camera) = entities.cameras.get_mut(self.camera) {
-            let speed = camera.speed * delta.as_f32();
-            let (yaw_delta, pitch_delta) = self.mouse_delta();
-            camera.yaw += yaw_delta as f32 * camera.sensitivity;
-            camera.yaw %= 360.0;
-            camera.pitch += pitch_delta as f32 * camera.sensitivity;
-            camera.pitch = camera.pitch.min(90.0).max(-90.0);
-
-            let forward: Vector3<f32> = camera.get_forward_vector().into();
-            let forward = forward.normalize();
-            let right: Vector3<f32> = camera.get_right_vector().into();
-            let right = right.normalize();
-            let up: Vector3<f32> = forward.cross(right).normalize();
-
-            let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();
-            if self.is_forward_pressed {
-                delta += forward;
-            }
-            if self.is_backward_pressed {
-                delta -= forward;
-            }
-            if self.is_up_pressed {
-                delta += up;
-            }
-            if self.is_down_pressed {
-                delta -= up;
-            }
-            if self.is_right_pressed {
-                delta += right;
-            }
-            if self.is_left_pressed {
-                delta -= right;
-            }
-            if delta.magnitude2() != 0.0 {
-                let delta = speed * delta.normalize();
-                camera.position += delta;
-            }
-        }
-        self.shift_mouse_deltas();
-    }
-
-    pub(super) fn on_active(&mut self) -> Action {
-        Action::Window(WindowAction::GrabCursor)
+impl InputContextType for CameraInputContext {
+    fn on_active(&mut self) -> Option<Action> {
+        Some(Action::Window(WindowAction::GrabCursor))
     }
 
     #[allow(clippy::collapsible_match, clippy::single_match)]
-    pub(super) fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         match event {
             Event::DeviceEvent { ref event, .. } => match event {
                 DeviceEvent::MouseMotion { delta } => {
@@ -166,5 +126,47 @@ impl CameraInputContext {
             },
             _ => EventAction::Unconsumed,
         }
+    }
+
+    fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
+        if let Some(camera) = entities.cameras.get_mut(self.camera) {
+            let speed = camera.speed * delta.as_f32();
+            let (yaw_delta, pitch_delta) = self.mouse_delta();
+            camera.yaw += yaw_delta as f32 * camera.sensitivity;
+            camera.yaw %= 360.0;
+            camera.pitch += pitch_delta as f32 * camera.sensitivity;
+            camera.pitch = camera.pitch.min(90.0).max(-90.0);
+
+            let forward: Vector3<f32> = camera.get_forward_vector().into();
+            let forward = forward.normalize();
+            let right: Vector3<f32> = camera.get_right_vector().into();
+            let right = right.normalize();
+            let up: Vector3<f32> = forward.cross(right).normalize();
+
+            let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();
+            if self.is_forward_pressed {
+                delta += forward;
+            }
+            if self.is_backward_pressed {
+                delta -= forward;
+            }
+            if self.is_up_pressed {
+                delta += up;
+            }
+            if self.is_down_pressed {
+                delta -= up;
+            }
+            if self.is_right_pressed {
+                delta += right;
+            }
+            if self.is_left_pressed {
+                delta -= right;
+            }
+            if delta.magnitude2() != 0.0 {
+                let delta = speed * delta.normalize();
+                camera.position += delta;
+            }
+        }
+        self.shift_mouse_deltas();
     }
 }
