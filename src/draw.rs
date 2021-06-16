@@ -1,9 +1,10 @@
-use wgpu::util::DeviceExt;
+use ascii::AsAsciiStr;
+use futures::executor::{LocalPool, LocalSpawner};
+use wgpu::util::{DeviceExt, StagingBelt};
+use wgpu_glyph::GlyphBrushBuilder;
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{camera::Camera, geometry::Vec3f, planets::chunk::Chunk, texture};
-
-pub struct DrawComponent {}
+use crate::{camera::Camera, console::Console, geometry::Vec3f, planets::chunk::Chunk, texture};
 
 pub struct DrawSystem {
     surface: wgpu::Surface,
@@ -17,6 +18,10 @@ pub struct DrawSystem {
     uniforms: Uniforms,
     uniform_buffer: wgpu::Buffer,
     uniform_group: wgpu::BindGroup,
+    glyph_brush: wgpu_glyph::GlyphBrush<()>,
+    staging_belt: StagingBelt,
+    local_pool: LocalPool,
+    local_spawner: LocalSpawner,
 }
 
 impl DrawSystem {
@@ -134,6 +139,16 @@ impl DrawSystem {
                 }],
             }),
         });
+        let staging_belt = wgpu::util::StagingBelt::new(1024);
+        let local_pool = futures::executor::LocalPool::new();
+        let local_spawner = local_pool.spawner();
+        let font = wgpu_glyph::ab_glyph::FontArc::try_from_slice(include_bytes!(
+            "NovusGraecorumRegular.ttf"
+        ))
+        .unwrap();
+        let glyph_brush =
+            GlyphBrushBuilder::using_font(font).build(&device, wgpu::TextureFormat::Bgra8UnormSrgb);
+
         Self {
             surface,
             device,
@@ -146,6 +161,10 @@ impl DrawSystem {
             uniform_buffer,
             uniform_group,
             mesh_buffers,
+            glyph_brush,
+            staging_belt,
+            local_pool,
+            local_spawner,
         }
     }
 
@@ -159,7 +178,39 @@ impl DrawSystem {
             texture::Texture::new_depth_texture(&self.device, &self.swapchain_desc);
     }
 
-    pub fn redraw(&mut self, camera: &Camera) {
+    fn draw_console(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        console: &Console,
+    ) {
+        let width = self.swapchain_desc.width;
+        let height = self.swapchain_desc.height;
+        self.glyph_brush.queue(wgpu_glyph::Section {
+            screen_position: (30.0, 30.0),
+            bounds: (width as f32, height as f32),
+            text: vec![
+                wgpu_glyph::Text::new(console.get_text().slice_ascii(..).unwrap().into())
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0),
+            ],
+            ..wgpu_glyph::Section::default()
+        });
+        self.glyph_brush
+            .draw_queued(
+                &self.device,
+                &mut self.staging_belt,
+                encoder,
+                view,
+                width,
+                height,
+            )
+            .expect("Draw queued");
+
+        self.staging_belt.finish();
+    }
+
+    pub fn redraw(&mut self, camera: &Camera, console: &Console) {
         let frame = match self.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
             Err(wgpu::SwapChainError::OutOfMemory) => panic!("Out of memory!"),
@@ -216,7 +267,16 @@ impl DrawSystem {
                 render_pass.draw_indexed(0..buf.index_count, 0, 0..1);
             }
         }
+        if console.is_showing() {
+            self.draw_console(&mut encoder, &frame.view, console);
+        }
         self.queue.submit(Some(encoder.finish()));
+
+        use futures::task::SpawnExt;
+        self.local_spawner
+            .spawn(self.staging_belt.recall())
+            .expect("Recall staging belt");
+        self.local_pool.run_until_stalled();
     }
 }
 

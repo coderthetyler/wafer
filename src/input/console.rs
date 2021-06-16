@@ -31,7 +31,7 @@ impl InputContextType for ConsoleInputContext {
             match code {
                 VirtualKeyCode::Escape => Action::Console(ConsoleAction::Hide).into(),
                 VirtualKeyCode::Return => Action::Console(ConsoleAction::Submit).into(),
-                VirtualKeyCode::Delete => Action::Console(ConsoleAction::Backspace).into(),
+                VirtualKeyCode::Back => Action::Console(ConsoleAction::Backspace).into(),
                 VirtualKeyCode::Up => Action::Console(ConsoleAction::NavigateBackwards).into(),
                 VirtualKeyCode::Down => Action::Console(ConsoleAction::NavigateForwards).into(),
                 VirtualKeyCode::Left => Action::Console(ConsoleAction::ShiftLeft).into(),

@@ -106,7 +106,6 @@ impl Application {
             .entity_system
             .get_selected_camera()
             .unwrap_or(&self.fallback_camera);
-        self.draw_system.redraw(camera);
-        // TODO draw console if it is showing
+        self.draw_system.redraw(camera, &self.console);
     }
 }

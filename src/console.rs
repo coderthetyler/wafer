@@ -1,6 +1,6 @@
 use ascii::{AsciiChar, AsciiString};
 
-use crate::action::Action;
+use crate::action::{Action, AppAction};
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 struct CursorPosition(usize);
@@ -91,11 +91,15 @@ impl Console {
         if self.text.is_empty() {
             None
         } else {
+            let mut action = None;
+            if self.text == "exit" {
+                action = Some(Action::App(AppAction::RequestClose));
+            }
             self.backwards.push(self.text.clone());
             self.forwards.clear();
             self.clear();
             // TODO parse console text into an action
-            None
+            action
         }
     }
 

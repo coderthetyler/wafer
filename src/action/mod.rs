@@ -1,6 +1,6 @@
 use super::Application;
 
-use self::app::AppAction;
+pub use self::app::AppAction;
 pub use self::console::ConsoleAction;
 pub use self::window::WindowAction;
 
