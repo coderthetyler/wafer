@@ -50,8 +50,8 @@ impl Console {
     /// Backspace one character at the cursor position, if possible.
     pub fn backspace(&mut self) {
         if self.cursor.0 != 0 {
-            self.text.remove(self.cursor.0 - 1);
             self.cursor.0 -= 1;
+            self.text.remove(self.cursor.0);
         }
     }
 

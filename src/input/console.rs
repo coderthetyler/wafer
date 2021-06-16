@@ -46,7 +46,9 @@ impl InputContextType for ConsoleInputContext {
                 WindowEvent::ReceivedCharacter(received_char) => {
                     let ascii_char = AsciiChar::from_ascii(*received_char);
                     if let Ok(ascii_char) = ascii_char {
-                        return Action::Console(ConsoleAction::Insert(ascii_char)).into();
+                        if ascii_char.is_ascii_printable() {
+                            return Action::Console(ConsoleAction::Insert(ascii_char)).into();
+                        }
                     }
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
