@@ -16,12 +16,10 @@ struct VertexOutput {
 };
 
 [[stage(vertex)]]
-fn vs_main(
-    model: VertexInput,
-) -> VertexOutput {
+fn vs_main(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.color = model.color;
-    out.clip_position = uniforms.view_proj * vec4<f32>(model.position, 1.0);
+    out.color = input.color;
+    out.clip_position = uniforms.view_proj * vec4<f32>(input.position, 1.0);
     return out;
 }
 
