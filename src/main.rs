@@ -14,7 +14,6 @@ mod generation;
 mod geometry;
 mod input;
 mod planets;
-mod texture;
 mod time;
 
 fn main() {
