@@ -5,7 +5,7 @@ use wgpu::{
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{camera::Camera, console::Console};
+use crate::{camera::Camera, console::Console, time::Frame};
 
 use self::{console::ConsoleDrawSubsystem, voxels::VoxelDrawSubsystem};
 
@@ -78,7 +78,7 @@ impl DrawSystem {
             .update_swapchain(&self.device, &self.swapchain_desc);
     }
 
-    pub fn redraw(&mut self, camera: &Camera, console: &Console) {
+    pub fn redraw(&mut self, frame: &Frame, camera: &Camera, console: &Console) {
         let swapchain_texture = match self.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
             Err(wgpu::SwapChainError::OutOfMemory) => panic!("Out of memory!"),

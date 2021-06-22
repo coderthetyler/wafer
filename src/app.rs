@@ -11,7 +11,7 @@ use crate::{
     draw::DrawSystem,
     entity::EntitySystem,
     input::{CameraInputContext, EventAction, InputSystem},
-    time::Timestamp,
+    time::{Frame, Timestamp},
 };
 
 pub struct Application {
@@ -23,6 +23,7 @@ pub struct Application {
     pub close_requested: bool,
     fallback_camera: Camera,
     last_frame: Timestamp,
+    frame: Frame,
 }
 
 impl Application {
@@ -37,6 +38,7 @@ impl Application {
             fallback_camera: Camera::new(10.0, 0.1),
             last_frame: Timestamp::now(),
             close_requested: false,
+            frame: Frame::new(),
         };
 
         let player_camera = app.entity_system.create();
@@ -97,15 +99,13 @@ impl Application {
     }
 
     fn redraw(&mut self) {
-        let now = Timestamp::now();
-        let delta_time = now.delta(self.last_frame);
-        self.last_frame = now;
+        self.frame.record();
         self.input_system
-            .update(&mut self.entity_system, delta_time);
+            .update(&self.frame, &mut self.entity_system);
         let camera = self
             .entity_system
             .get_selected_camera()
             .unwrap_or(&self.fallback_camera);
-        self.draw_system.redraw(camera, &self.console);
+        self.draw_system.redraw(&self.frame, camera, &self.console);
     }
 }
