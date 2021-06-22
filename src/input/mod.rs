@@ -1,7 +1,8 @@
 use winit::{event::Event, window::WindowId};
 
 use crate::action::Action;
-use crate::{entity::EntitySystem, time::Seconds};
+use crate::entity::EntitySystem;
+use crate::time::Frame;
 
 pub use self::camera::CameraInputContext;
 pub use self::console::ConsoleInputContext;
@@ -39,9 +40,9 @@ impl InputSystem {
     }
 
     /// Update the active input context, if any.
-    pub fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
+    pub fn update(&mut self, frame: &Frame, entities: &mut EntitySystem) {
         if let Some(context) = self.context_stack.last_mut() {
-            context.update(entities, delta);
+            context.update(frame, entities);
         }
     }
 
@@ -74,7 +75,7 @@ impl From<Action> for EventAction {
 pub trait InputContextType {
     fn on_active(&mut self) -> Option<Action>;
     fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction;
-    fn update(&mut self, entities: &mut EntitySystem, delta: Seconds);
+    fn update(&mut self, frame: &Frame, entities: &mut EntitySystem);
 }
 
 pub enum InputContext {
@@ -97,10 +98,10 @@ impl InputContextType for InputContext {
         }
     }
 
-    fn update(&mut self, entities: &mut EntitySystem, delta: Seconds) {
+    fn update(&mut self, frame: &Frame, entities: &mut EntitySystem) {
         match self {
-            InputContext::Camera(context) => context.update(entities, delta),
-            InputContext::Console(context) => context.update(entities, delta),
+            InputContext::Camera(context) => context.update(frame, entities),
+            InputContext::Console(context) => context.update(frame, entities),
         }
     }
 }
