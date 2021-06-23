@@ -100,6 +100,7 @@ impl DrawSystem {
                 color_target,
                 color_target_bounds,
                 console,
+                self.voxel_ss.triangle_count,
             ),
         ];
         self.queue.submit(commands);

@@ -24,6 +24,7 @@ pub struct VoxelSubsystem {
     uniforms: Uniforms,
     uniform_buffer: wgpu::Buffer,
     uniform_group: wgpu::BindGroup,
+    pub triangle_count: usize,
 }
 
 impl VoxelSubsystem {
@@ -31,6 +32,7 @@ impl VoxelSubsystem {
         let mut chunk = Chunk::new([0, 0, 0].into());
         chunk.randomize();
         let chunk_mesh = chunk.build_mesh();
+        let triangle_count = chunk_mesh.indices.len() / 3;
         let mesh_buffers = vec![IndexedVertexBuffer::new(&device, chunk_mesh)];
         let vertex_layout = wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<VoxelVertex>() as wgpu::BufferAddress,
@@ -118,6 +120,7 @@ impl VoxelSubsystem {
             uniforms,
             uniform_buffer,
             uniform_group,
+            triangle_count,
         }
     }
 

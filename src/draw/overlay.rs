@@ -51,6 +51,7 @@ impl OverlaySubsystem {
         color_target: &TextureView,
         bounds: (u32, u32),
         console: &Console,
+        triangle_count: usize,
     ) -> CommandBuffer {
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor::default());
         if console.is_showing() {
@@ -69,9 +70,15 @@ impl OverlaySubsystem {
             color_target,
             bounds,
             &mut encoder,
-            format!("FPS: {}", frame.framerate.round() as u32).as_str(),
+            format!(
+                "fps: {}\nfaces: {}",
+                frame.framerate.round() as u32,
+                triangle_count
+            )
+            .as_str(),
             (10.0, 10.0),
         );
+
         self.staging_belt.finish();
         encoder.finish()
     }
@@ -120,7 +127,7 @@ impl OverlaySubsystem {
     ) {
         let prompt_text = Text::new(text)
             .with_color([0.0, 0.0, 0.0, 1.0])
-            .with_scale(40.0);
+            .with_scale(35.0);
         let prompt_section = Section::default()
             .with_screen_position(position)
             .with_bounds((width as f32, height as f32))
