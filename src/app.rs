@@ -1,17 +1,17 @@
 use winit::{
-    event::{Event, WindowEvent},
+    event::{ElementState, Event, VirtualKeyCode, WindowEvent},
     event_loop::ControlFlow,
     window::Window,
 };
 
 use crate::{
-    action::ActionType,
+    action::{Action, ActionType, AppAction},
     camera::Camera,
     console::Console,
     draw::DrawSystem,
     entity::EntitySystem,
     input::{CameraInputContext, EventAction, InputSystem},
-    time::Timestamp,
+    time::Frame,
 };
 
 pub struct Application {
@@ -22,7 +22,7 @@ pub struct Application {
     pub input_system: InputSystem,
     pub close_requested: bool,
     fallback_camera: Camera,
-    last_frame: Timestamp,
+    frame: Frame,
 }
 
 impl Application {
@@ -35,8 +35,8 @@ impl Application {
             entity_system: EntitySystem::new(),
             input_system: InputSystem::new(),
             fallback_camera: Camera::new(10.0, 0.1),
-            last_frame: Timestamp::now(),
             close_requested: false,
+            frame: Frame::new(),
         };
 
         let player_camera = app.entity_system.create();
@@ -56,10 +56,14 @@ impl Application {
     }
 
     pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
-        let action = self.input_system.receive_event(&self.window.id(), event);
+        let action = self.process_app_event(event);
         match action {
             EventAction::Unconsumed => {
-                self.process_app_event(event);
+                if let EventAction::React(action) =
+                    self.input_system.receive_event(&self.window.id(), event)
+                {
+                    action.perform(self);
+                };
             }
             EventAction::Consumed => {
                 // Nothing to do if event was consumed without producing an action
@@ -75,37 +79,54 @@ impl Application {
 
     /// Process all top-level events that drive basic application behavior.
     /// This includes window resizing and redraw requests, for example.
-    fn process_app_event(&mut self, event: &Event<()>) {
+    fn process_app_event(&mut self, event: &Event<()>) -> EventAction {
         match event {
-            Event::MainEventsCleared => self.window.request_redraw(),
-            Event::RedrawRequested(window_id) if *window_id == self.window.id() => self.redraw(),
+            Event::MainEventsCleared => {
+                self.window.request_redraw();
+                return EventAction::Consumed;
+            }
+            Event::RedrawRequested(window_id) if *window_id == self.window.id() => {
+                self.redraw();
+                return EventAction::Consumed;
+            }
             Event::WindowEvent {
                 window_id,
                 ref event,
             } if self.window.id() == *window_id => match event {
                 WindowEvent::CloseRequested => {
                     self.close_requested = true;
+                    return EventAction::Consumed;
                 }
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    self.draw_system.resize_surface(new_inner_size)
+                    self.draw_system.resize_surface(new_inner_size);
+                    return EventAction::Consumed;
                 }
-                WindowEvent::Resized(ref new_size) => self.draw_system.resize_surface(new_size),
+                WindowEvent::Resized(ref new_size) => {
+                    self.draw_system.resize_surface(new_size);
+                    return EventAction::Consumed;
+                }
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if let (Some(VirtualKeyCode::Tab), ElementState::Pressed) =
+                        (input.virtual_keycode, input.state)
+                    {
+                        return EventAction::React(Action::App(AppAction::ToggleDebugOverlay));
+                    }
+                }
                 _ => {}
             },
             _ => {}
         }
+        EventAction::Unconsumed
     }
 
     fn redraw(&mut self) {
-        let now = Timestamp::now();
-        let delta_time = now.delta(self.last_frame);
-        self.last_frame = now;
+        self.frame.record();
         self.input_system
-            .update(&mut self.entity_system, delta_time);
+            .update(&self.frame, &mut self.entity_system);
         let camera = self
             .entity_system
             .get_selected_camera()
             .unwrap_or(&self.fallback_camera);
-        self.draw_system.redraw(camera, &self.console);
+        self.draw_system.redraw(&self.frame, camera, &self.console);
     }
 }
