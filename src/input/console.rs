@@ -1,6 +1,6 @@
 use ascii::AsciiChar;
 use winit::{
-    event::{Event, VirtualKeyCode, WindowEvent},
+    event::{ElementState, Event, VirtualKeyCode, WindowEvent},
     window::WindowId,
 };
 
@@ -52,7 +52,9 @@ impl InputContextType for ConsoleInputContext {
                     }
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
-                    if let Some(code) = input.virtual_keycode {
+                    if let (Some(code), ElementState::Pressed) =
+                        (input.virtual_keycode, input.state)
+                    {
                         return receive_virtual_keycode(code);
                     }
                 }
