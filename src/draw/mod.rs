@@ -19,8 +19,8 @@ pub struct DrawSystem {
     queue: Queue,
     swapchain_desc: SwapChainDescriptor,
     swapchain: SwapChain,
-    voxel_ss: VoxelSubsystem,
-    overlay_ss: OverlaySubsystem,
+    pub voxel_ss: VoxelSubsystem,
+    pub overlay_ss: OverlaySubsystem,
 }
 
 impl DrawSystem {

@@ -18,6 +18,7 @@ pub struct OverlaySubsystem {
     staging_belt: StagingBelt,
     local_pool: LocalPool,
     local_spawner: LocalSpawner,
+    pub show_debug_overlay: bool,
 }
 
 impl OverlaySubsystem {
@@ -34,6 +35,7 @@ impl OverlaySubsystem {
             staging_belt,
             local_pool,
             local_spawner,
+            show_debug_overlay: true,
         }
     }
 
@@ -65,19 +67,21 @@ impl OverlaySubsystem {
                 (10.0, bounds.1 as f32 - 50.0),
             );
         }
-        self.draw_text(
-            device,
-            color_target,
-            bounds,
-            &mut encoder,
-            format!(
-                "fps: {}\nfaces: {}",
-                frame.framerate.round() as u32,
-                triangle_count
-            )
-            .as_str(),
-            (10.0, 10.0),
-        );
+        if self.show_debug_overlay {
+            self.draw_text(
+                device,
+                color_target,
+                bounds,
+                &mut encoder,
+                format!(
+                    "fps: {}\nfaces: {}",
+                    frame.framerate.round() as u32,
+                    triangle_count
+                )
+                .as_str(),
+                (10.0, 10.0),
+            );
+        }
 
         self.staging_belt.finish();
         encoder.finish()

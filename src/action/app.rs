@@ -3,6 +3,8 @@ use crate::app::Application;
 use super::{Action, ActionType};
 
 pub enum AppAction {
+    /// Show & hide the debugging overlay.
+    ToggleDebugOverlay,
     /// Exit the application.
     RequestClose,
 }
@@ -12,6 +14,9 @@ impl ActionType for AppAction {
         match self {
             AppAction::RequestClose => {
                 app.close_requested = true;
+            }
+            AppAction::ToggleDebugOverlay => {
+                app.draw_system.overlay_ss.show_debug_overlay ^= true;
             }
         }
     }
