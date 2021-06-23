@@ -13,7 +13,6 @@ mod entity;
 mod generation;
 mod geometry;
 mod input;
-mod overlay;
 mod planets;
 mod time;
 
