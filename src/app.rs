@@ -11,7 +11,7 @@ use crate::{
     draw::DrawSystem,
     entity::EntitySystem,
     input::{CameraInputContext, EventAction, InputSystem},
-    time::{Frame, Timestamp},
+    time::Frame,
 };
 
 pub struct Application {
@@ -22,7 +22,6 @@ pub struct Application {
     pub input_system: InputSystem,
     pub close_requested: bool,
     fallback_camera: Camera,
-    last_frame: Timestamp,
     frame: Frame,
 }
 
@@ -36,7 +35,6 @@ impl Application {
             entity_system: EntitySystem::new(),
             input_system: InputSystem::new(),
             fallback_camera: Camera::new(10.0, 0.1),
-            last_frame: Timestamp::now(),
             close_requested: false,
             frame: Frame::new(),
         };
