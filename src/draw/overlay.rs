@@ -4,25 +4,24 @@ use futures::{
 };
 use wgpu::{
     util::StagingBelt, CommandBuffer, CommandEncoder, CommandEncoderDescriptor, Device, LoadOp,
-    Operations, RenderPassColorAttachment, RenderPassDescriptor, SwapChainDescriptor,
-    TextureFormat, TextureView,
+    Operations, RenderPassColorAttachment, RenderPassDescriptor, TextureFormat, TextureView,
 };
 use wgpu_glyph::{
     ab_glyph::FontArc, GlyphBrush, GlyphBrushBuilder, GlyphPositioner, Layout, Section,
     SectionGeometry, SectionText, Text,
 };
 
-use crate::console::Console;
+use crate::{console::Console, time::Frame};
 
-pub struct ConsoleDrawSubsystem {
+pub struct OverlaySubsystem {
     glyph_brush: GlyphBrush<()>,
     staging_belt: StagingBelt,
     local_pool: LocalPool,
     local_spawner: LocalSpawner,
 }
 
-impl ConsoleDrawSubsystem {
-    pub fn new(device: &wgpu::Device, swapchain_desc: &SwapChainDescriptor) -> Self {
+impl OverlaySubsystem {
+    pub fn new(device: &wgpu::Device) -> Self {
         // Stuff for text rendering
         let staging_belt = StagingBelt::new(1024);
         let local_pool = LocalPool::new();
@@ -47,14 +46,33 @@ impl ConsoleDrawSubsystem {
 
     pub fn draw(
         &mut self,
+        frame: &Frame,
         device: &Device,
         color_target: &TextureView,
         bounds: (u32, u32),
         console: &Console,
     ) -> CommandBuffer {
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor::default());
-        self.draw_cursor(color_target, bounds, &mut encoder, console);
-        self.draw_text(device, color_target, bounds, &mut encoder, console);
+        if console.is_showing() {
+            self.draw_cursor(color_target, bounds, &mut encoder, console);
+            self.draw_text(
+                device,
+                color_target,
+                bounds,
+                &mut encoder,
+                console.get_text().as_str(),
+                (10.0, bounds.1 as f32 - 50.0),
+            );
+        }
+        self.draw_text(
+            device,
+            color_target,
+            bounds,
+            &mut encoder,
+            format!("FPS: {}", frame.framerate.round() as u32).as_str(),
+            (10.0, 10.0),
+        );
+        self.staging_belt.finish();
         encoder.finish()
     }
 
@@ -97,13 +115,14 @@ impl ConsoleDrawSubsystem {
         color_target: &TextureView,
         (width, height): (u32, u32),
         encoder: &mut CommandEncoder,
-        console: &Console,
+        text: &str,
+        position: (f32, f32),
     ) {
-        let prompt_text = Text::new(console.get_text().as_str())
+        let prompt_text = Text::new(text)
             .with_color([0.0, 0.0, 0.0, 1.0])
             .with_scale(40.0);
         let prompt_section = Section::default()
-            .with_screen_position((30.0, 30.0))
+            .with_screen_position(position)
             .with_bounds((width as f32, height as f32))
             .add_text(prompt_text);
         self.glyph_brush.queue(prompt_section);
@@ -117,7 +136,6 @@ impl ConsoleDrawSubsystem {
                 height,
             )
             .expect("Draw queued");
-        self.staging_belt.finish();
     }
 }
 

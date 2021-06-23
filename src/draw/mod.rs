@@ -7,9 +7,9 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{camera::Camera, console::Console, time::Frame};
 
-use self::{console::ConsoleDrawSubsystem, voxels::VoxelDrawSubsystem};
+use self::{overlay::OverlaySubsystem, voxels::VoxelSubsystem};
 
-mod console;
+mod overlay;
 mod texture;
 mod voxels;
 
@@ -19,8 +19,8 @@ pub struct DrawSystem {
     queue: Queue,
     swapchain_desc: SwapChainDescriptor,
     swapchain: SwapChain,
-    voxel_ss: VoxelDrawSubsystem,
-    console_ss: ConsoleDrawSubsystem,
+    voxel_ss: VoxelSubsystem,
+    overlay_ss: OverlaySubsystem,
 }
 
 impl DrawSystem {
@@ -55,8 +55,8 @@ impl DrawSystem {
             present_mode: PresentMode::Fifo,
         };
         let swapchain = device.create_swap_chain(&surface, &swapchain_desc);
-        let voxel_ss = VoxelDrawSubsystem::new(&device, &swapchain_desc);
-        let console_ss = ConsoleDrawSubsystem::new(&device, &swapchain_desc);
+        let voxel_ss = VoxelSubsystem::new(&device, &swapchain_desc);
+        let console_ss = OverlaySubsystem::new(&device);
         Self {
             surface,
             device,
@@ -64,7 +64,7 @@ impl DrawSystem {
             swapchain_desc,
             swapchain,
             voxel_ss,
-            console_ss,
+            overlay_ss: console_ss,
         }
     }
 
@@ -86,26 +86,25 @@ impl DrawSystem {
         };
         let color_target = &swapchain_texture.view;
         let color_target_bounds = (self.swapchain_desc.width, self.swapchain_desc.height);
-        let mut commands: Vec<CommandBuffer> = Vec::with_capacity(2);
-
-        commands.push(self.voxel_ss.draw(
-            &self.device,
-            &self.queue,
-            color_target,
-            color_target_bounds,
-            camera,
-        ));
-        if console.is_showing() {
-            commands.push(self.console_ss.draw(
+        let commands: Vec<CommandBuffer> = vec![
+            self.voxel_ss.draw(
+                &self.device,
+                &self.queue,
+                color_target,
+                color_target_bounds,
+                camera,
+            ),
+            self.overlay_ss.draw(
+                frame,
                 &self.device,
                 color_target,
                 color_target_bounds,
                 console,
-            ));
-        }
+            ),
+        ];
         self.queue.submit(commands);
         if console.is_showing() {
-            self.console_ss.recycle();
+            self.overlay_ss.recycle();
         }
     }
 }

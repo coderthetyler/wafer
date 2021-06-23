@@ -17,7 +17,7 @@ use crate::{
 
 use super::texture::Texture;
 
-pub struct VoxelDrawSubsystem {
+pub struct VoxelSubsystem {
     pipeline: RenderPipeline,
     depth_texture: Texture,
     mesh_buffers: Vec<IndexedVertexBuffer>,
@@ -26,7 +26,7 @@ pub struct VoxelDrawSubsystem {
     uniform_group: wgpu::BindGroup,
 }
 
-impl VoxelDrawSubsystem {
+impl VoxelSubsystem {
     pub fn new(device: &Device, swapchain_desc: &SwapChainDescriptor) -> Self {
         let mut chunk = Chunk::new([0, 0, 0].into());
         chunk.randomize();

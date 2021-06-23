@@ -19,7 +19,7 @@ impl Camera {
             yaw: 180.0,
             fovy: 45.0,
             znear: 0.1,
-            zfar: 100.0,
+            zfar: 1000.0,
             speed,
             sensitivity,
         }
