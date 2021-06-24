@@ -71,7 +71,7 @@ impl VoxelSubsystem {
         let shader = device.create_shader_module(&ShaderModuleDescriptor {
             label: None,
             flags: ShaderFlags::all(),
-            source: ShaderSource::Wgsl(include_str!("voxels.wgsl").into()),
+            source: ShaderSource::Wgsl(include_str!("shaders/voxels.wgsl").into()),
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,

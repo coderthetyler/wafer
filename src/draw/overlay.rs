@@ -27,7 +27,7 @@ impl OverlaySubsystem {
         let staging_belt = StagingBelt::new(1024);
         let local_pool = LocalPool::new();
         let local_spawner = local_pool.spawner();
-        let font = FontArc::try_from_slice(include_bytes!("Tuffy.ttf")).unwrap();
+        let font = FontArc::try_from_slice(include_bytes!("fonts/Tuffy.ttf")).unwrap();
         let glyph_brush =
             GlyphBrushBuilder::using_font(font).build(&device, TextureFormat::Bgra8UnormSrgb);
         Self {
