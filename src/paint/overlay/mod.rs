@@ -13,7 +13,9 @@ use wgpu_glyph::{
 
 use crate::{console::Console, time::Frame};
 
-pub struct OverlaySubsystem {
+/// Responsible for rendering an overlay.
+/// This includes rendering any UI or debugging info.
+pub struct OverlayPainter {
     glyph_brush: GlyphBrush<()>,
     staging_belt: StagingBelt,
     local_pool: LocalPool,
@@ -21,7 +23,7 @@ pub struct OverlaySubsystem {
     pub show_debug_overlay: bool,
 }
 
-impl OverlaySubsystem {
+impl OverlayPainter {
     pub fn new(device: &wgpu::Device) -> Self {
         // Stuff for text rendering
         let staging_belt = StagingBelt::new(1024);

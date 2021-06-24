@@ -16,7 +16,7 @@ impl ActionType for AppAction {
                 app.close_requested = true;
             }
             AppAction::ToggleDebugOverlay => {
-                app.draw_system.overlay_ss.show_debug_overlay ^= true;
+                app.paint_system.overlay.show_debug_overlay ^= true;
             }
         }
     }

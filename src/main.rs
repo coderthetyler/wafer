@@ -8,11 +8,11 @@ mod action;
 mod app;
 mod camera;
 mod console;
-mod draw;
 mod entity;
 mod generation;
 mod geometry;
 mod input;
+mod paint;
 mod planets;
 mod time;
 

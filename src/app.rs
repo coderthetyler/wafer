@@ -8,17 +8,17 @@ use crate::{
     action::{Action, ActionType, AppAction},
     camera::Camera,
     console::Console,
-    draw::DrawSystem,
     entity::EntitySystem,
     geometry::{Position, Vec3f, Volume},
     input::{CameraInputContext, EventAction, InputSystem},
+    paint::PaintSystem,
     time::Frame,
 };
 
 pub struct Application {
     pub window: Window,
     pub console: Console,
-    pub draw_system: DrawSystem,
+    pub paint_system: PaintSystem,
     pub entity_system: EntitySystem,
     pub input_system: InputSystem,
     pub close_requested: bool,
@@ -28,11 +28,11 @@ pub struct Application {
 
 impl Application {
     pub async fn new(window: Window) -> Self {
-        let draw_system = DrawSystem::new(&window).await;
+        let draw_system = PaintSystem::new(&window).await;
         let mut app = Application {
             window,
             console: Console::new(),
-            draw_system,
+            paint_system: draw_system,
             entity_system: EntitySystem::new(),
             input_system: InputSystem::new(),
             fallback_camera: Camera::new(10.0, 0.1),
@@ -125,11 +125,11 @@ impl Application {
                     return EventAction::Consumed;
                 }
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    self.draw_system.resize_surface(new_inner_size);
+                    self.paint_system.resize_surface(new_inner_size);
                     return EventAction::Consumed;
                 }
                 WindowEvent::Resized(ref new_size) => {
-                    self.draw_system.resize_surface(new_size);
+                    self.paint_system.resize_surface(new_size);
                     return EventAction::Consumed;
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
@@ -154,6 +154,6 @@ impl Application {
             .entity_system
             .get_selected_camera()
             .unwrap_or(&self.fallback_camera);
-        self.draw_system.redraw(&self.frame, camera, &self.console);
+        self.paint_system.redraw(&self.frame, camera, &self.console);
     }
 }

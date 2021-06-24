@@ -1,29 +1,40 @@
 use wgpu::{
     BackendBit, CommandBuffer, Device, DeviceDescriptor, Features, Instance, Limits,
     PowerPreference, PresentMode, Queue, RequestAdapterOptions, Surface, SwapChain,
-    SwapChainDescriptor, TextureUsage,
+    SwapChainDescriptor, TextureUsage, TextureView,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{camera::Camera, console::Console, time::Frame};
 
-use self::{overlay::OverlaySubsystem, voxels::VoxelSubsystem};
+use self::{overlay::OverlayPainter, scene::ScenePainter};
 
 mod overlay;
+mod scene;
 mod texture;
-mod voxels;
 
-pub struct DrawSystem {
-    surface: Surface,
-    device: Device,
-    queue: Queue,
-    swapchain_desc: SwapChainDescriptor,
-    swapchain: SwapChain,
-    pub voxel_ss: VoxelSubsystem,
-    pub overlay_ss: OverlaySubsystem,
+pub struct PaintSurface {
+    pub surface: Surface,
+    pub device: Device,
+    pub queue: Queue,
+    pub swapchain_desc: SwapChainDescriptor,
+    pub swapchain: SwapChain,
 }
 
-impl DrawSystem {
+pub struct PaintContext<'surface> {
+    pub surface: &'surface PaintSurface,
+    pub color_target: &'surface TextureView,
+    pub width: f32,
+    pub height: f32,
+}
+
+pub struct PaintSystem {
+    surface: PaintSurface,
+    pub scene: ScenePainter,
+    pub overlay: OverlayPainter,
+}
+
+impl PaintSystem {
     pub async fn new(window: &Window) -> Self {
         let instance = Instance::new(BackendBit::PRIMARY);
         let surface = unsafe { instance.create_surface(window) };
@@ -55,57 +66,62 @@ impl DrawSystem {
             present_mode: PresentMode::Fifo,
         };
         let swapchain = device.create_swap_chain(&surface, &swapchain_desc);
-        let voxel_ss = VoxelSubsystem::new(&device, &swapchain_desc);
-        let console_ss = OverlaySubsystem::new(&device);
+        let world_painter = ScenePainter::new(&device, &swapchain_desc);
+        let overlay_painter = OverlayPainter::new(&device);
         Self {
-            surface,
-            device,
-            queue,
-            swapchain_desc,
-            swapchain,
-            voxel_ss,
-            overlay_ss: console_ss,
+            surface: PaintSurface {
+                surface,
+                device,
+                queue,
+                swapchain_desc,
+                swapchain,
+            },
+            scene: world_painter,
+            overlay: overlay_painter,
         }
     }
 
     pub fn resize_surface(&mut self, new_size: &PhysicalSize<u32>) {
-        self.swapchain_desc.width = new_size.width;
-        self.swapchain_desc.height = new_size.height;
-        self.swapchain = self
+        let surface = &mut self.surface;
+        surface.swapchain_desc.width = new_size.width;
+        surface.swapchain_desc.height = new_size.height;
+        surface.swapchain = surface
             .device
-            .create_swap_chain(&self.surface, &self.swapchain_desc);
-        self.voxel_ss
-            .update_swapchain(&self.device, &self.swapchain_desc);
+            .create_swap_chain(&surface.surface, &surface.swapchain_desc);
+        self.scene
+            .update_swapchain(&surface.device, &surface.swapchain_desc);
     }
 
     pub fn redraw(&mut self, frame: &Frame, camera: &Camera, console: &Console) {
-        let swapchain_texture = match self.swapchain.get_current_frame() {
+        let surface = &mut self.surface;
+        let swapchain_texture = match surface.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
             Err(wgpu::SwapChainError::OutOfMemory) => panic!("Out of memory!"),
             Err(_) => return, // Handled on the next frame
         };
         let color_target = &swapchain_texture.view;
-        let color_target_bounds = (self.swapchain_desc.width, self.swapchain_desc.height);
+        let color_target_bounds = (surface.swapchain_desc.width, surface.swapchain_desc.height);
+        let mut context = PaintContext {
+            surface,
+            color_target,
+            width: surface.swapchain_desc.width as f32,
+            height: surface.swapchain_desc.height as f32,
+        };
+        // ctx: &mut PaintContext, camera: &Camera
         let commands: Vec<CommandBuffer> = vec![
-            self.voxel_ss.draw(
-                &self.device,
-                &self.queue,
-                color_target,
-                color_target_bounds,
-                camera,
-            ),
-            self.overlay_ss.draw(
+            self.scene.paint(&mut context, camera),
+            self.overlay.draw(
                 frame,
-                &self.device,
+                &self.surface.device,
                 color_target,
                 color_target_bounds,
                 console,
-                self.voxel_ss.triangle_count,
+                10, // TODO re-add triangle counting
             ),
         ];
-        self.queue.submit(commands);
+        self.surface.queue.submit(commands);
         if console.is_showing() {
-            self.overlay_ss.recycle();
+            self.overlay.recycle();
         }
     }
 }
