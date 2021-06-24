@@ -3,19 +3,21 @@ use crate::{
     generation::{
         GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexIter, GenerationalIndexVec,
     },
-    geometry::Position,
+    geometry::{Position, Vec3f, Volume},
 };
 
 pub type Entity = GenerationalIndex;
-pub type EntityMap<T> = GenerationalIndexVec<T>;
 pub type EntityIter<'map> = GenerationalIndexIter<'map>;
+pub type ComponentVec<T> = GenerationalIndexVec<T>;
 
 pub struct EntitySystem {
     entity_allocator: GenerationalIndexAllocator,
 
     // Components
-    pub positions: EntityMap<Position>,
-    pub cameras: EntityMap<Camera>,
+    pub positions: ComponentVec<Position>,
+    pub velocities: ComponentVec<Vec3f>,
+    pub colliders: ComponentVec<Volume>,
+    pub cameras: ComponentVec<Camera>,
 
     // State
     pub selected_camera: Entity,
@@ -26,8 +28,10 @@ impl EntitySystem {
         Self {
             entity_allocator: GenerationalIndexAllocator::new(),
 
-            positions: EntityMap::new(),
-            cameras: EntityMap::new(),
+            positions: ComponentVec::new(),
+            velocities: ComponentVec::new(),
+            colliders: ComponentVec::new(),
+            cameras: ComponentVec::new(),
 
             selected_camera: Entity::none(),
         }

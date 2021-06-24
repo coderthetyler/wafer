@@ -10,6 +10,7 @@ use crate::{
     console::Console,
     draw::DrawSystem,
     entity::EntitySystem,
+    geometry::{Position, Vec3f, Volume},
     input::{CameraInputContext, EventAction, InputSystem},
     time::Frame,
 };
@@ -44,6 +45,32 @@ impl Application {
             .cameras
             .set(player_camera, Camera::new(20.0, 0.1));
         app.entity_system.selected_camera = player_camera;
+
+        let cube_friend = app.entity_system.create();
+        app.entity_system.velocities.set(
+            cube_friend,
+            Vec3f {
+                x: 0.2,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        app.entity_system.positions.set(
+            cube_friend,
+            Position {
+                x: 0.0,
+                y: 20.0,
+                z: 0.0,
+            },
+        );
+        app.entity_system.colliders.set(
+            cube_friend,
+            Volume::Box {
+                x: 0.75,
+                y: 0.75,
+                z: 0.75,
+            },
+        );
 
         if let Some(action) = app
             .input_system
