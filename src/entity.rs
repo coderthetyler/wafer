@@ -3,7 +3,7 @@ use crate::{
     generation::{
         GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexIter, GenerationalIndexVec,
     },
-    geometry::{Position, Vec3f, Volume},
+    geometry::{Position, Rotation, Vec3f, Volume},
 };
 
 pub type Entity = GenerationalIndex;
@@ -16,6 +16,8 @@ pub struct EntitySystem {
     // Components
     pub positions: ComponentVec<Position>,
     pub velocities: ComponentVec<Vec3f>,
+    pub rotations: ComponentVec<Rotation>,
+    pub angular_velocities: ComponentVec<Vec3f>,
     pub colliders: ComponentVec<Volume>,
     pub cameras: ComponentVec<Camera>,
 
@@ -30,6 +32,8 @@ impl EntitySystem {
 
             positions: ComponentVec::new(),
             velocities: ComponentVec::new(),
+            rotations: ComponentVec::new(),
+            angular_velocities: ComponentVec::new(),
             colliders: ComponentVec::new(),
             cameras: ComponentVec::new(),
 

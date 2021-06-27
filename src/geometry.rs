@@ -14,6 +14,12 @@ pub struct Position {
     pub z: f32,
 }
 
+pub struct Rotation {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3i {
     pub x: i32,

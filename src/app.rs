@@ -9,7 +9,7 @@ use crate::{
     camera::Camera,
     console::Console,
     entity::EntitySystem,
-    geometry::{Position, Vec3f, Volume},
+    geometry::{Position, Rotation, Vec3f, Volume},
     input::{CameraInputContext, EventAction, InputSystem},
     paint::PaintSystem,
     time::Frame,
@@ -28,11 +28,11 @@ pub struct Application {
 
 impl Application {
     pub async fn new(window: Window) -> Self {
-        let draw_system = PaintSystem::new(&window).await;
+        let paint_system = PaintSystem::new(&window).await;
         let mut app = Application {
             window,
             console: Console::new(),
-            paint_system: draw_system,
+            paint_system,
             entity_system: EntitySystem::new(),
             input_system: InputSystem::new(),
             fallback_camera: Camera::new(10.0, 0.1),
@@ -69,6 +69,14 @@ impl Application {
                 x: 0.75,
                 y: 0.75,
                 z: 0.75,
+            },
+        );
+        app.entity_system.rotations.set(
+            cube_friend_0,
+            Rotation {
+                x: 45.0,
+                y: 45.0,
+                z: 45.0,
             },
         );
 

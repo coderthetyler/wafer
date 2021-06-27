@@ -1,19 +1,7 @@
+use cgmath::{Deg, Matrix4, Rotation3, SquareMatrix};
 use wgpu::{util::DeviceExt, BindGroupLayout, Device};
 
-use crate::{entity::EntitySystem, geometry::Volume, paint::texture::Texture};
-
-/*
-
-# Design: One instanced draw call & model matrix array buffer per collider type.
-
-# To do
-
-1. Init vertex and index buffer for the box volume buffer
-2. Create render pipeline
-3. Write a vertex shader
-4. Add draw calls to WorldPainter
-
-*/
+use crate::{entity::{Entity, EntitySystem}, geometry::Volume, paint::texture::Texture};
 
 /// All data required to draw collider volumes, if enabled.
 pub struct ColliderPainter {
@@ -130,23 +118,41 @@ impl ColliderPainter {
 
     /// Update the painter with updated collider info
     pub fn update(&mut self, device: &Device, entities: &EntitySystem) {
+        fn entity_to_instance(entity: Entity, entities: &EntitySystem) -> Option<InstanceData> {
+            if let (Some(pos), Some(Volume::Box { x, y, z })) =
+                (entities.positions.get(entity), entities.colliders.get(entity))
+            {
+                let mut model: Matrix4<f32> = cgmath::Matrix4::identity();
+
+                // Scale
+                let scale = cgmath::Matrix4::from_nonuniform_scale(*x, *y, *z);
+                model = scale * model;
+
+                // Rotation (optional)
+                if let Some(rot) = entities.rotations.get(entity) {
+                    let rotation: Matrix4<f32> = (
+                        cgmath::Quaternion::from_angle_x(Deg(rot.x)) * 
+                        cgmath::Quaternion::from_angle_y(Deg(rot.y)) * 
+                        cgmath::Quaternion::from_angle_z(Deg(rot.z))).into();
+                    model = rotation * model;
+                }
+
+                // Position
+                let translation =
+                    cgmath::Matrix4::from_translation([pos.x, pos.y, pos.z].into());
+                model = translation * model;
+                
+                let instance = InstanceData {
+                    model: model.into(),
+                };
+                Some(instance)
+            } else {
+                None
+            }
+        }
         let box_instances: Vec<InstanceData> = entities
             .iter()
-            .filter_map(|idx| {
-                if let (Some(pos), Some(Volume::Box { x, y, z })) =
-                    (entities.positions.get(idx), entities.colliders.get(idx))
-                {
-                    let translation =
-                        cgmath::Matrix4::from_translation([pos.x, pos.y, pos.z].into());
-                    let scale = cgmath::Matrix4::from_nonuniform_scale(*x, *y, *z);
-                    let instance = InstanceData {
-                        model: (translation * scale).into(),
-                    };
-                    Some(instance)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|idx| entity_to_instance(idx, entities))
             .collect();
         self.instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
