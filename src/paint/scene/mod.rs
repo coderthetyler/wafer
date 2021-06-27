@@ -4,9 +4,9 @@ use wgpu::{
     SwapChainDescriptor,
 };
 
-use crate::camera::Camera;
+use crate::{camera::Camera, entity::EntitySystem};
 
-use self::voxels::VoxelPainter;
+use self::{colliders::ColliderPainter, voxels::VoxelPainter};
 
 use super::{texture::Texture, PaintContext};
 
@@ -39,6 +39,7 @@ pub struct ScenePainter {
     depth_texture: Texture,
 
     voxel_painter: VoxelPainter,
+    collider_painter: ColliderPainter,
 
     uniforms: WorldUniforms,
     uniform_buffer: wgpu::Buffer,
@@ -77,9 +78,11 @@ impl ScenePainter {
         });
         let depth_texture = Texture::new_depth_texture(device, &swapchain_desc);
         let voxel_painter = VoxelPainter::new(device, swapchain_desc, &uniform_group_layout);
+        let collider_painter = ColliderPainter::new(device, swapchain_desc, &uniform_group_layout);
         Self {
             depth_texture,
             voxel_painter,
+            collider_painter,
             uniforms,
             uniform_buffer,
             uniform_group,
@@ -90,7 +93,12 @@ impl ScenePainter {
         self.depth_texture = Texture::new_depth_texture(device, swapchain_desc);
     }
 
-    pub fn paint(&mut self, ctx: &mut PaintContext, camera: &Camera) -> CommandBuffer {
+    pub fn paint(
+        &mut self,
+        ctx: &mut PaintContext,
+        camera: &Camera,
+        entities: &EntitySystem,
+    ) -> CommandBuffer {
         self.uniforms.view_proj = camera
             .build_view_projection_matrix((ctx.width, ctx.height).into())
             .into();
@@ -140,6 +148,19 @@ impl ScenePainter {
                     render_pass.set_index_buffer(buf.indices.slice(..), wgpu::IndexFormat::Uint32);
                     render_pass.draw_indexed(0..buf.index_count, 0, 0..1);
                 }
+            }
+
+            // Collider painter
+            {
+                let pntr = &mut self.collider_painter;
+                pntr.update(&ctx.surface.device, entities);
+                render_pass.set_pipeline(&pntr.pipeline);
+                render_pass.set_bind_group(0, &self.uniform_group, &[]);
+                render_pass.set_vertex_buffer(0, pntr.vertex_buffer.slice(..));
+                render_pass.set_vertex_buffer(1, pntr.instance_buffer.slice(..));
+                render_pass
+                    .set_index_buffer(pntr.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..pntr.index_count, 0, 0..pntr.instance_count);
             }
         }
         encoder.finish()

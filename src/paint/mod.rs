@@ -5,7 +5,7 @@ use wgpu::{
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{camera::Camera, console::Console, time::Frame};
+use crate::{camera::Camera, console::Console, entity::EntitySystem, time::Frame};
 
 use self::{overlay::OverlayPainter, scene::ScenePainter};
 
@@ -92,7 +92,13 @@ impl PaintSystem {
             .update_swapchain(&surface.device, &surface.swapchain_desc);
     }
 
-    pub fn redraw(&mut self, frame: &Frame, camera: &Camera, console: &Console) {
+    pub fn redraw(
+        &mut self,
+        frame: &Frame,
+        camera: &Camera,
+        console: &Console,
+        entities: &EntitySystem,
+    ) {
         let surface = &mut self.surface;
         let swapchain_texture = match surface.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
@@ -109,7 +115,7 @@ impl PaintSystem {
         };
         // ctx: &mut PaintContext, camera: &Camera
         let commands: Vec<CommandBuffer> = vec![
-            self.scene.paint(&mut context, camera),
+            self.scene.paint(&mut context, camera, entities),
             self.overlay.draw(
                 frame,
                 &self.surface.device,

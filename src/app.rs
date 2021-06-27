@@ -46,9 +46,9 @@ impl Application {
             .set(player_camera, Camera::new(20.0, 0.1));
         app.entity_system.selected_camera = player_camera;
 
-        let cube_friend = app.entity_system.create();
+        let cube_friend_0 = app.entity_system.create();
         app.entity_system.velocities.set(
-            cube_friend,
+            cube_friend_0,
             Vec3f {
                 x: 0.2,
                 y: 0.0,
@@ -56,7 +56,7 @@ impl Application {
             },
         );
         app.entity_system.positions.set(
-            cube_friend,
+            cube_friend_0,
             Position {
                 x: 0.0,
                 y: 20.0,
@@ -64,10 +64,36 @@ impl Application {
             },
         );
         app.entity_system.colliders.set(
-            cube_friend,
+            cube_friend_0,
             Volume::Box {
                 x: 0.75,
                 y: 0.75,
+                z: 0.75,
+            },
+        );
+
+        let cube_friend_1 = app.entity_system.create();
+        app.entity_system.velocities.set(
+            cube_friend_1,
+            Vec3f {
+                x: -0.1,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        app.entity_system.positions.set(
+            cube_friend_1,
+            Position {
+                x: 8.0,
+                y: 18.0,
+                z: 0.0,
+            },
+        );
+        app.entity_system.colliders.set(
+            cube_friend_1,
+            Volume::Box {
+                x: 0.75,
+                y: 0.50,
                 z: 0.75,
             },
         );
@@ -154,6 +180,7 @@ impl Application {
             .entity_system
             .get_selected_camera()
             .unwrap_or(&self.fallback_camera);
-        self.paint_system.redraw(&self.frame, camera, &self.console);
+        self.paint_system
+            .redraw(&self.frame, camera, &self.console, &self.entity_system);
     }
 }
