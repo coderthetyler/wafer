@@ -12,6 +12,7 @@ use crate::{
     geometry::{Position, Rotation, Vec3f, Volume},
     input::{CameraInputContext, EventAction, InputSystem},
     paint::PaintSystem,
+    physics::PhysicsSystem,
     time::Frame,
 };
 
@@ -21,6 +22,7 @@ pub struct Application {
     pub paint_system: PaintSystem,
     pub entity_system: EntitySystem,
     pub input_system: InputSystem,
+    pub physics_system: PhysicsSystem,
     pub close_requested: bool,
     fallback_camera: Camera,
     frame: Frame,
@@ -35,18 +37,19 @@ impl Application {
             paint_system,
             entity_system: EntitySystem::new(),
             input_system: InputSystem::new(),
+            physics_system: PhysicsSystem::new(),
             fallback_camera: Camera::new(10.0, 0.1),
             close_requested: false,
             frame: Frame::new(),
         };
 
-        let player_camera = app.entity_system.create();
+        let player_camera = app.entity_system.entities.allocate();
         app.entity_system
             .cameras
             .set(player_camera, Camera::new(20.0, 0.1));
         app.entity_system.selected_camera = player_camera;
 
-        let cube_friend_0 = app.entity_system.create();
+        let cube_friend_0 = app.entity_system.entities.allocate();
         app.entity_system.velocities.set(
             cube_friend_0,
             Vec3f {
@@ -79,8 +82,16 @@ impl Application {
                 z: 45.0,
             },
         );
+        app.entity_system.angular_velocities.set(
+            cube_friend_0,
+            Vec3f {
+                x: 2.0,
+                y: 4.5,
+                z: 6.5,
+            },
+        );
 
-        let cube_friend_1 = app.entity_system.create();
+        let cube_friend_1 = app.entity_system.entities.allocate();
         app.entity_system.velocities.set(
             cube_friend_1,
             Vec3f {
@@ -183,6 +194,8 @@ impl Application {
     fn redraw(&mut self) {
         self.frame.record();
         self.input_system
+            .update(&self.frame, &mut self.entity_system);
+        self.physics_system
             .update(&self.frame, &mut self.entity_system);
         let camera = self
             .entity_system

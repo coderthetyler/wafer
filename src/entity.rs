@@ -11,7 +11,7 @@ pub type EntityIter<'map> = GenerationalIndexIter<'map>;
 pub type ComponentVec<T> = GenerationalIndexVec<T>;
 
 pub struct EntitySystem {
-    entity_allocator: GenerationalIndexAllocator,
+    pub entities: GenerationalIndexAllocator,
 
     // Components
     pub positions: ComponentVec<Position>,
@@ -28,7 +28,7 @@ pub struct EntitySystem {
 impl EntitySystem {
     pub fn new() -> Self {
         Self {
-            entity_allocator: GenerationalIndexAllocator::new(),
+            entities: GenerationalIndexAllocator::new(),
 
             positions: ComponentVec::new(),
             velocities: ComponentVec::new(),
@@ -41,23 +41,11 @@ impl EntitySystem {
         }
     }
 
-    pub fn iter(&self) -> EntityIter {
-        self.entity_allocator.iter()
-    }
-
     pub fn get_selected_camera(&self) -> Option<&Camera> {
         self.cameras.get(self.selected_camera)
     }
 
     pub fn get_selected_camera_mut(&mut self) -> Option<&mut Camera> {
         self.cameras.get_mut(self.selected_camera)
-    }
-
-    pub fn kill(&mut self, entity: Entity) -> bool {
-        self.entity_allocator.deallocate(entity)
-    }
-
-    pub fn create(&mut self) -> Entity {
-        self.entity_allocator.allocate()
     }
 }

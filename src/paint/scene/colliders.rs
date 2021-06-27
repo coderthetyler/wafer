@@ -1,3 +1,5 @@
+use std::ops::{Mul, MulAssign};
+
 use cgmath::{Deg, Matrix4, Rotation3, SquareMatrix};
 use wgpu::{util::DeviceExt, BindGroupLayout, Device};
 
@@ -86,7 +88,7 @@ impl ColliderPainter {
             [1.0, 1.0, 1.0], // 6
             [1.0, 0.0, 1.0], // 7
         ];
-        let box_indices: [u32; 24] = [
+        let box_indices: [u16; 24] = [
             0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 3, 7, 2, 6
         ];
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -117,7 +119,8 @@ impl ColliderPainter {
     }
 
     /// Update the painter with updated collider info
-    pub fn update(&mut self, device: &Device, entities: &EntitySystem) {
+    pub fn update(&mut self, device: &Device, entity_system: &EntitySystem) {
+        /// Interpret an entity as an instance to draw
         fn entity_to_instance(entity: Entity, entities: &EntitySystem) -> Option<InstanceData> {
             if let (Some(pos), Some(Volume::Box { x, y, z })) =
                 (entities.positions.get(entity), entities.colliders.get(entity))
@@ -142,17 +145,18 @@ impl ColliderPainter {
                     cgmath::Matrix4::from_translation([pos.x, pos.y, pos.z].into());
                 model = translation * model;
                 
-                let instance = InstanceData {
+                Some(InstanceData {
                     model: model.into(),
-                };
-                Some(instance)
+                })
             } else {
                 None
             }
         }
-        let box_instances: Vec<InstanceData> = entities
+
+        // Construct instance buffer from box instances
+        let box_instances: Vec<InstanceData> = entity_system.entities
             .iter()
-            .filter_map(|idx| entity_to_instance(idx, entities))
+            .filter_map(|idx| entity_to_instance(idx, entity_system))
             .collect();
         self.instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,

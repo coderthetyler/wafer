@@ -159,7 +159,7 @@ impl ScenePainter {
                 render_pass.set_vertex_buffer(0, pntr.vertex_buffer.slice(..));
                 render_pass.set_vertex_buffer(1, pntr.instance_buffer.slice(..));
                 render_pass
-                    .set_index_buffer(pntr.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                    .set_index_buffer(pntr.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
                 render_pass.draw_indexed(0..pntr.index_count, 0, 0..pntr.instance_count);
             }
         }

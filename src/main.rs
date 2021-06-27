@@ -13,6 +13,7 @@ mod generation;
 mod geometry;
 mod input;
 mod paint;
+mod physics;
 mod planets;
 mod time;
 
