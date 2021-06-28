@@ -94,6 +94,8 @@ impl Console {
             let mut action = None;
             if self.text == "exit" {
                 action = Some(Action::App(AppAction::RequestClose));
+            } else if self.text == "wires" {
+                action = Some(Action::App(AppAction::ToglePaintColliderVolumes));
             }
             self.backwards.push(self.text.clone());
             self.forwards.clear();

@@ -3,6 +3,8 @@ use crate::app::Application;
 use super::{Action, ActionType};
 
 pub enum AppAction {
+    /// Show & hide collider volume wireframes.
+    ToglePaintColliderVolumes,
     /// Show & hide the debugging overlay.
     ToggleDebugOverlay,
     /// Exit the application.
@@ -16,7 +18,10 @@ impl ActionType for AppAction {
                 app.close_requested = true;
             }
             AppAction::ToggleDebugOverlay => {
-                app.paint_system.overlay.show_debug_overlay ^= true;
+                app.state.hide_debug_overlay ^= true;
+            }
+            AppAction::ToglePaintColliderVolumes => {
+                app.state.show_collider_volumes ^= true;
             }
         }
     }

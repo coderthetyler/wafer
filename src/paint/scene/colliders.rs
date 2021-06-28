@@ -131,15 +131,6 @@ impl ColliderPainter {
                 let scale = cgmath::Matrix4::from_nonuniform_scale(*x, *y, *z);
                 model = scale * model;
 
-                // Rotation (optional)
-                if let Some(rot) = entities.rotations.get(entity) {
-                    let rotation: Matrix4<f32> = (
-                        cgmath::Quaternion::from_angle_x(Deg(rot.x)) * 
-                        cgmath::Quaternion::from_angle_y(Deg(rot.y)) * 
-                        cgmath::Quaternion::from_angle_z(Deg(rot.z))).into();
-                    model = rotation * model;
-                }
-
                 // Position
                 let translation =
                     cgmath::Matrix4::from_translation([pos.x, pos.y, pos.z].into());

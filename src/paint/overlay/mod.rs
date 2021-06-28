@@ -11,7 +11,7 @@ use wgpu_glyph::{
     SectionGeometry, SectionText, Text,
 };
 
-use crate::{console::Console, time::Frame};
+use crate::{app::State, console::Console, time::Frame};
 
 /// Responsible for rendering an overlay.
 /// This includes rendering any UI or debugging info.
@@ -20,7 +20,6 @@ pub struct OverlayPainter {
     staging_belt: StagingBelt,
     local_pool: LocalPool,
     local_spawner: LocalSpawner,
-    pub show_debug_overlay: bool,
 }
 
 impl OverlayPainter {
@@ -37,7 +36,6 @@ impl OverlayPainter {
             staging_belt,
             local_pool,
             local_spawner,
-            show_debug_overlay: true,
         }
     }
 
@@ -50,6 +48,7 @@ impl OverlayPainter {
 
     pub fn draw(
         &mut self,
+        state: &State,
         frame: &Frame,
         device: &Device,
         color_target: &TextureView,
@@ -69,7 +68,7 @@ impl OverlayPainter {
                 (10.0, bounds.1 as f32 - 50.0),
             );
         }
-        if self.show_debug_overlay {
+        if !state.hide_debug_overlay {
             self.draw_text(
                 device,
                 color_target,

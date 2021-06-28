@@ -16,7 +16,14 @@ use crate::{
     time::Frame,
 };
 
+#[derive(Default)]
+pub struct State {
+    pub hide_debug_overlay: bool,
+    pub show_collider_volumes: bool,
+}
+
 pub struct Application {
+    pub state: State,
     pub window: Window,
     pub console: Console,
     pub paint_system: PaintSystem,
@@ -32,6 +39,7 @@ impl Application {
     pub async fn new(window: Window) -> Self {
         let paint_system = PaintSystem::new(&window).await;
         let mut app = Application {
+            state: State::default(),
             window,
             console: Console::new(),
             paint_system,
@@ -201,7 +209,12 @@ impl Application {
             .entity_system
             .get_selected_camera()
             .unwrap_or(&self.fallback_camera);
-        self.paint_system
-            .redraw(&self.frame, camera, &self.console, &self.entity_system);
+        self.paint_system.redraw(
+            &self.state,
+            &self.frame,
+            camera,
+            &self.console,
+            &self.entity_system,
+        );
     }
 }

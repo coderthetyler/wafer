@@ -4,7 +4,7 @@ use wgpu::{
     SwapChainDescriptor,
 };
 
-use crate::{camera::Camera, entity::EntitySystem};
+use crate::{app::State, camera::Camera, entity::EntitySystem};
 
 use self::{colliders::ColliderPainter, voxels::VoxelPainter};
 
@@ -95,6 +95,7 @@ impl ScenePainter {
 
     pub fn paint(
         &mut self,
+        state: &State,
         ctx: &mut PaintContext,
         camera: &Camera,
         entities: &EntitySystem,
@@ -151,7 +152,7 @@ impl ScenePainter {
             }
 
             // Collider painter
-            {
+            if state.show_collider_volumes {
                 let pntr = &mut self.collider_painter;
                 pntr.update(&ctx.surface.device, entities);
                 render_pass.set_pipeline(&pntr.pipeline);

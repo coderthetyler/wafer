@@ -5,7 +5,7 @@ use wgpu::{
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{camera::Camera, console::Console, entity::EntitySystem, time::Frame};
+use crate::{app::State, camera::Camera, console::Console, entity::EntitySystem, time::Frame};
 
 use self::{overlay::OverlayPainter, scene::ScenePainter};
 
@@ -94,6 +94,7 @@ impl PaintSystem {
 
     pub fn redraw(
         &mut self,
+        state: &State,
         frame: &Frame,
         camera: &Camera,
         console: &Console,
@@ -115,8 +116,9 @@ impl PaintSystem {
         };
         // ctx: &mut PaintContext, camera: &Camera
         let commands: Vec<CommandBuffer> = vec![
-            self.scene.paint(&mut context, camera, entities),
+            self.scene.paint(state, &mut context, camera, entities),
             self.overlay.draw(
+                state,
                 frame,
                 &self.surface.device,
                 color_target,
