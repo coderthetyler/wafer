@@ -1,10 +1,16 @@
+use cgmath::{Deg, Vector3};
 use wgpu::{
     util::DeviceExt, Color, CommandBuffer, CommandEncoderDescriptor, Device, LoadOp, Operations,
     RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor,
     SwapChainDescriptor,
 };
 
-use crate::{app::AppConfig, camera::Camera, entity::EntityPool};
+use crate::{
+    app::AppConfig,
+    camera::{AspectRatio, Camera},
+    entity::{Entity, EntityPool},
+    geometry::{Position, Rotation},
+};
 
 use self::{colliders::ColliderPainter, voxels::VoxelPainter};
 
@@ -93,15 +99,54 @@ impl ScenePainter {
         self.depth_texture = Texture::new_depth_texture(device, swapchain_desc);
     }
 
+    pub fn build_view_projection_matrix(
+        &self,
+        camera: &Camera,
+        position: Vector3<f32>,
+        rotation: Vector3<f32>,
+        aspect_ratio: AspectRatio,
+    ) -> cgmath::Matrix4<f32> {
+        let pitch = rotation.x;
+        let yaw = rotation.y;
+        let view = cgmath::Matrix4::from_angle_x(Deg(pitch))
+            * cgmath::Matrix4::from_angle_y(Deg(yaw))
+            * cgmath::Matrix4::from_translation(position);
+        let proj = cgmath::perspective(
+            Deg(camera.fovy),
+            aspect_ratio.into(),
+            camera.znear,
+            camera.zfar,
+        );
+        proj * view
+    }
+
     pub fn paint(
         &mut self,
-        state: &AppConfig,
+        config: &AppConfig,
         ctx: &mut PaintContext,
-        camera: &Camera,
+        viewer: Entity,
         entities: &EntityPool,
     ) -> CommandBuffer {
-        self.uniforms.view_proj = camera
-            .build_view_projection_matrix((ctx.width, ctx.height).into())
+        let pos = entities.position.get(viewer).unwrap_or(&Position {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        let pos = [pos.x, pos.y, pos.z].into();
+        let rot = entities.rotation.get(viewer).unwrap_or(&Rotation {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        let rot = [rot.x, rot.y, rot.z].into();
+        let camera = entities.camera.get(viewer).unwrap_or(&Camera {
+            fovy: 45.0,
+            znear: 0.1,
+            zfar: 1000.0,
+        });
+        let aspect_ratio = (ctx.width, ctx.height).into();
+        self.uniforms.view_proj = self
+            .build_view_projection_matrix(camera, pos, rot, aspect_ratio)
             .into();
         ctx.surface.queue.write_buffer(
             &self.uniform_buffer,
@@ -152,7 +197,7 @@ impl ScenePainter {
             }
 
             // Collider painter
-            if state.show_collider_volumes {
+            if config.show_collider_volumes {
                 let pntr = &mut self.collider_painter;
                 pntr.update(&ctx.surface.device, entities);
                 render_pass.set_pipeline(&pntr.pipeline);

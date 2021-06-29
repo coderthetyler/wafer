@@ -128,6 +128,21 @@ impl InputContextType for CameraInputContext {
         }
     }
 
+    fn get_forward_vector(&self) -> [f32; 3] {
+        let yaw = Deg(-self.yaw);
+        let pitch = Deg(-self.pitch);
+        [
+            pitch.cos() * yaw.sin(),
+            -pitch.sin(),
+            pitch.cos() * yaw.cos(),
+        ]
+    }
+
+    fn get_right_vector(&self) -> [f32; 3] {
+        let yaw = Deg(-self.yaw);
+        [-yaw.cos(), 0.0, yaw.sin()]
+    }
+
     fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
         if let Some(camera) = entities.camera.get_mut(self.camera) {
             let speed = camera.speed * frame.delta.as_f32();

@@ -8,10 +8,10 @@ use crate::{
     action::{Action, ActionType, ConfigAction},
     camera::Camera,
     console::Console,
-    entity::{Entity, EntityPool},
-    geometry::{Position, Rotation, Vec3f, Volume},
+    entity::EntityPool,
+    geometry::{Position, Rotation, Volume},
     input::{CameraInputContext, EventAction, InputSystem},
-    movement::MovementSystem,
+    movement::{MovementSystem, Spin, Velocity},
     paint::PaintSystem,
     time::Frame,
 };
@@ -52,16 +52,30 @@ impl Application {
             frame: Frame::new(),
         };
 
-        let player_camera = app.entities.pool.allocate();
-        app.entities
-            .camera
-            .set(player_camera, Camera::new(20.0, 0.1));
-        app.paint_system.active_camera = Some(player_camera);
+        let player = app.entities.pool.allocate();
+        app.entities.camera.set(player, Camera::new());
+        app.entities.position.set(
+            player,
+            Position {
+                x: 0.0,
+                y: 0.0,
+                z: 32.0,
+            },
+        );
+        app.entities.rotation.set(
+            player,
+            Rotation {
+                x: 0.0,
+                y: 180.0,
+                z: 0.0,
+            },
+        );
+        app.paint_system.active_camera = player;
 
         let cube_friend_0 = app.entities.pool.allocate();
         app.entities.velocity.set(
             cube_friend_0,
-            Vec3f {
+            Velocity {
                 x: 0.2,
                 y: 0.0,
                 z: 0.0,
@@ -93,7 +107,7 @@ impl Application {
         );
         app.entities.spin.set(
             cube_friend_0,
-            Vec3f {
+            Spin {
                 x: 2.0,
                 y: 4.5,
                 z: 6.5,
@@ -103,7 +117,7 @@ impl Application {
         let cube_friend_1 = app.entities.pool.allocate();
         app.entities.velocity.set(
             cube_friend_1,
-            Vec3f {
+            Velocity {
                 x: -0.1,
                 y: 0.0,
                 z: 0.0,
@@ -128,7 +142,7 @@ impl Application {
 
         if let Some(action) = app
             .input_system
-            .push_context(CameraInputContext::new(player_camera).into())
+            .push_context(CameraInputContext::new(player).into())
         {
             action.perform(&mut app);
         }
