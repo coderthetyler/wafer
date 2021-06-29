@@ -33,7 +33,6 @@ pub struct Application {
     pub input_system: InputSystem,
     pub movement_system: MovementSystem,
 
-    fallback_camera: Camera,
     frame: Frame,
 }
 
@@ -44,11 +43,12 @@ impl Application {
             config: Configuration::default(),
             window,
             console: Console::new(),
+
             paint_system,
             entity_system: EntitySystem::new(),
             input_system: InputSystem::new(),
             movement_system: MovementSystem::new(),
-            fallback_camera: Camera::new(10.0, 0.1),
+
             frame: Frame::new(),
         };
 
@@ -206,10 +206,7 @@ impl Application {
             .update(&self.frame, &mut self.entity_system);
         self.movement_system
             .update(&self.frame, &mut self.entity_system);
-        let camera = self
-            .entity_system
-            .get_selected_camera()
-            .unwrap_or(&self.fallback_camera);
+        let camera = self.entity_system.get_selected_camera();
         self.paint_system.redraw(
             &self.config,
             &self.frame,

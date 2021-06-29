@@ -32,6 +32,7 @@ pub struct PaintContext<'surface> {
 
 pub struct PaintSystem {
     surface: PaintSurface,
+    fallback_camera: Camera,
     pub scene: ScenePainter,
     pub overlay: OverlayPainter,
 }
@@ -71,6 +72,7 @@ impl PaintSystem {
         let world_painter = ScenePainter::new(&device, &swapchain_desc);
         let overlay_painter = OverlayPainter::new(&device);
         Self {
+            fallback_camera: Camera::new(10.0, 0.1),
             surface: PaintSurface {
                 surface,
                 device,
@@ -98,10 +100,11 @@ impl PaintSystem {
         &mut self,
         state: &Configuration,
         frame: &Frame,
-        camera: &Camera,
+        camera: Option<&Camera>,
         console: &Console,
         entities: &EntitySystem,
     ) {
+        let camera = camera.unwrap_or(&self.fallback_camera);
         let surface = &mut self.surface;
         let swapchain_texture = match surface.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
