@@ -11,7 +11,7 @@ use wgpu_glyph::{
     SectionGeometry, SectionText, Text,
 };
 
-use crate::{app::Configuration, console::Console, time::Frame};
+use crate::{app::AppConfig, console::Console, time::Frame};
 
 /// Responsible for rendering an overlay.
 /// This includes rendering any UI or debugging info.
@@ -48,7 +48,7 @@ impl OverlayPainter {
 
     pub fn draw(
         &mut self,
-        config: &Configuration,
+        config: &AppConfig,
         frame: &Frame,
         device: &Device,
         color_target: &TextureView,

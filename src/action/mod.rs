@@ -1,6 +1,6 @@
 use super::Application;
 
-pub use self::app::AppAction;
+pub use self::app::ConfigAction;
 pub use self::console::ConsoleAction;
 pub use self::window::WindowAction;
 
@@ -17,8 +17,8 @@ pub enum Action {
     Console(ConsoleAction),
     /// An action scoped to the window.
     Window(WindowAction),
-    /// An action scope to the application.
-    App(AppAction),
+    /// An action scoped to the application state.
+    Config(ConfigAction),
 }
 
 impl ActionType for Action {
@@ -31,7 +31,7 @@ impl ActionType for Action {
             Action::Window(action) => {
                 action.perform(app);
             }
-            Action::App(action) => {
+            Action::Config(action) => {
                 action.perform(app);
             }
         }

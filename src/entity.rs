@@ -1,51 +1,36 @@
 use crate::{
     camera::Camera,
-    generation::{
-        GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexIter, GenerationalIndexVec,
-    },
-    geometry::{Position, Rotation, Vec3f, Volume},
+    generation::{GenerationalIndex, GenerationalIndexPool, GenerationalIndexVec},
+    geometry::{Position, Rotation, Volume},
+    movement::{Spin, Velocity},
 };
 
 pub type Entity = GenerationalIndex;
-pub type EntityIter<'map> = GenerationalIndexIter<'map>;
 pub type ComponentVec<T> = GenerationalIndexVec<T>;
 
-pub struct EntitySystem {
-    pub entities: GenerationalIndexAllocator,
+pub struct EntityPool {
+    pub pool: GenerationalIndexPool,
 
     // Components
-    pub positions: ComponentVec<Position>,
-    pub velocities: ComponentVec<Vec3f>,
-    pub rotations: ComponentVec<Rotation>,
-    pub angular_velocities: ComponentVec<Vec3f>,
+    pub position: ComponentVec<Position>,
+    pub velocity: ComponentVec<Velocity>,
+    pub rotation: ComponentVec<Rotation>,
+    pub spin: ComponentVec<Spin>,
     pub colliders: ComponentVec<Volume>,
-    pub cameras: ComponentVec<Camera>,
-
-    // State
-    pub selected_camera: Entity,
+    pub camera: ComponentVec<Camera>,
 }
 
-impl EntitySystem {
+impl EntityPool {
     pub fn new() -> Self {
         Self {
-            entities: GenerationalIndexAllocator::new(),
+            pool: GenerationalIndexPool::new(),
 
-            positions: ComponentVec::new(),
-            velocities: ComponentVec::new(),
-            rotations: ComponentVec::new(),
-            angular_velocities: ComponentVec::new(),
+            position: ComponentVec::new(),
+            velocity: ComponentVec::new(),
+            rotation: ComponentVec::new(),
+            spin: ComponentVec::new(),
             colliders: ComponentVec::new(),
-            cameras: ComponentVec::new(),
-
-            selected_camera: Entity::none(),
+            camera: ComponentVec::new(),
         }
-    }
-
-    pub fn get_selected_camera(&self) -> Option<&Camera> {
-        self.cameras.get(self.selected_camera)
-    }
-
-    pub fn get_selected_camera_mut(&mut self) -> Option<&mut Camera> {
-        self.cameras.get_mut(self.selected_camera)
     }
 }

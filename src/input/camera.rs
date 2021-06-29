@@ -6,7 +6,7 @@ use winit::{
 
 use crate::{
     action::{Action, ConsoleAction, WindowAction},
-    entity::{Entity, EntitySystem},
+    entity::{Entity, EntityPool},
     time::Frame,
 };
 
@@ -128,8 +128,8 @@ impl InputContextType for CameraInputContext {
         }
     }
 
-    fn update(&mut self, frame: &Frame, entities: &mut EntitySystem) {
-        if let Some(camera) = entities.cameras.get_mut(self.camera) {
+    fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
+        if let Some(camera) = entities.camera.get_mut(self.camera) {
             let speed = camera.speed * frame.delta.as_f32();
             let (yaw_delta, pitch_delta) = self.mouse_delta();
             camera.yaw += yaw_delta as f32 * camera.sensitivity;

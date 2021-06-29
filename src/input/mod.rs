@@ -1,7 +1,7 @@
 use winit::{event::Event, window::WindowId};
 
 use crate::action::Action;
-use crate::entity::EntitySystem;
+use crate::entity::EntityPool;
 use crate::time::Frame;
 
 pub use self::camera::CameraInputContext;
@@ -40,7 +40,7 @@ impl InputSystem {
     }
 
     /// Update the active input context, if any.
-    pub fn update(&mut self, frame: &Frame, entities: &mut EntitySystem) {
+    pub fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
         if let Some(context) = self.context_stack.last_mut() {
             context.update(frame, entities);
         }
@@ -75,7 +75,7 @@ impl From<Action> for EventAction {
 pub trait InputContextType {
     fn on_active(&mut self) -> Option<Action>;
     fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction;
-    fn update(&mut self, frame: &Frame, entities: &mut EntitySystem);
+    fn update(&mut self, frame: &Frame, entities: &mut EntityPool);
 }
 
 pub enum InputContext {
@@ -98,7 +98,7 @@ impl InputContextType for InputContext {
         }
     }
 
-    fn update(&mut self, frame: &Frame, entities: &mut EntitySystem) {
+    fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
         match self {
             InputContext::Camera(context) => context.update(frame, entities),
             InputContext::Console(context) => context.update(frame, entities),

@@ -4,7 +4,7 @@ use wgpu::{
     SwapChainDescriptor,
 };
 
-use crate::{app::Configuration, camera::Camera, entity::EntitySystem};
+use crate::{app::AppConfig, camera::Camera, entity::EntityPool};
 
 use self::{colliders::ColliderPainter, voxels::VoxelPainter};
 
@@ -95,10 +95,10 @@ impl ScenePainter {
 
     pub fn paint(
         &mut self,
-        state: &Configuration,
+        state: &AppConfig,
         ctx: &mut PaintContext,
         camera: &Camera,
-        entities: &EntitySystem,
+        entities: &EntityPool,
     ) -> CommandBuffer {
         self.uniforms.view_proj = camera
             .build_view_projection_matrix((ctx.width, ctx.height).into())

@@ -6,7 +6,7 @@ use winit::{
 
 use crate::{
     action::{Action, ConsoleAction, WindowAction},
-    entity::EntitySystem,
+    entity::EntityPool,
     time::Frame,
 };
 
@@ -65,7 +65,7 @@ impl InputContextType for ConsoleInputContext {
         EventAction::Unconsumed
     }
 
-    fn update(&mut self, frame: &Frame, entities: &mut EntitySystem) {
+    fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
         // TODO do input contexts really need this method?
     }
 }

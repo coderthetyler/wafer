@@ -5,10 +5,10 @@ use winit::{
 };
 
 use crate::{
-    action::{Action, ActionType, AppAction},
+    action::{Action, ActionType, ConfigAction},
     camera::Camera,
     console::Console,
-    entity::EntitySystem,
+    entity::{Entity, EntityPool},
     geometry::{Position, Rotation, Vec3f, Volume},
     input::{CameraInputContext, EventAction, InputSystem},
     movement::MovementSystem,
@@ -17,21 +17,23 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct Configuration {
+pub struct AppConfig {
     pub hide_debug_overlay: bool,
     pub show_collider_volumes: bool,
     pub should_exit: bool,
 }
 
 pub struct Application {
-    pub config: Configuration,
+    pub config: AppConfig,
     pub window: Window,
     pub console: Console,
+    pub entities: EntityPool,
 
-    pub paint_system: PaintSystem,
-    pub entity_system: EntitySystem,
     pub input_system: InputSystem,
+    pub paint_system: PaintSystem,
     pub movement_system: MovementSystem,
+
+    pub active_camera: Entity,
 
     frame: Frame,
 }
@@ -40,26 +42,28 @@ impl Application {
     pub async fn new(window: Window) -> Self {
         let paint_system = PaintSystem::new(&window).await;
         let mut app = Application {
-            config: Configuration::default(),
+            config: AppConfig::default(),
             window,
             console: Console::new(),
+            entities: EntityPool::new(),
 
-            paint_system,
-            entity_system: EntitySystem::new(),
             input_system: InputSystem::new(),
+            paint_system,
             movement_system: MovementSystem::new(),
+
+            active_camera: Entity::none(),
 
             frame: Frame::new(),
         };
 
-        let player_camera = app.entity_system.entities.allocate();
-        app.entity_system
-            .cameras
+        let player_camera = app.entities.pool.allocate();
+        app.entities
+            .camera
             .set(player_camera, Camera::new(20.0, 0.1));
-        app.entity_system.selected_camera = player_camera;
+        app.active_camera = player_camera;
 
-        let cube_friend_0 = app.entity_system.entities.allocate();
-        app.entity_system.velocities.set(
+        let cube_friend_0 = app.entities.pool.allocate();
+        app.entities.velocity.set(
             cube_friend_0,
             Vec3f {
                 x: 0.2,
@@ -67,7 +71,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.entity_system.positions.set(
+        app.entities.position.set(
             cube_friend_0,
             Position {
                 x: 0.0,
@@ -75,7 +79,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.entity_system.colliders.set(
+        app.entities.colliders.set(
             cube_friend_0,
             Volume::Box {
                 x: 0.75,
@@ -83,7 +87,7 @@ impl Application {
                 z: 0.75,
             },
         );
-        app.entity_system.rotations.set(
+        app.entities.rotation.set(
             cube_friend_0,
             Rotation {
                 x: 45.0,
@@ -91,7 +95,7 @@ impl Application {
                 z: 45.0,
             },
         );
-        app.entity_system.angular_velocities.set(
+        app.entities.spin.set(
             cube_friend_0,
             Vec3f {
                 x: 2.0,
@@ -100,8 +104,8 @@ impl Application {
             },
         );
 
-        let cube_friend_1 = app.entity_system.entities.allocate();
-        app.entity_system.velocities.set(
+        let cube_friend_1 = app.entities.pool.allocate();
+        app.entities.velocity.set(
             cube_friend_1,
             Vec3f {
                 x: -0.1,
@@ -109,7 +113,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.entity_system.positions.set(
+        app.entities.position.set(
             cube_friend_1,
             Position {
                 x: 8.0,
@@ -117,7 +121,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.entity_system.colliders.set(
+        app.entities.colliders.set(
             cube_friend_1,
             Volume::Box {
                 x: 0.75,
@@ -190,7 +194,9 @@ impl Application {
                     if let (Some(VirtualKeyCode::Tab), ElementState::Pressed) =
                         (input.virtual_keycode, input.state)
                     {
-                        return EventAction::React(Action::App(AppAction::ToggleDebugOverlay));
+                        return EventAction::React(Action::Config(
+                            ConfigAction::ToggleDebugOverlay,
+                        ));
                     }
                 }
                 _ => {}
@@ -202,17 +208,15 @@ impl Application {
 
     fn redraw(&mut self) {
         self.frame.record();
-        self.input_system
-            .update(&self.frame, &mut self.entity_system);
-        self.movement_system
-            .update(&self.frame, &mut self.entity_system);
-        let camera = self.entity_system.get_selected_camera();
+        self.input_system.update(&self.frame, &mut self.entities);
+        self.movement_system.update(&self.frame, &mut self.entities);
+        let camera = self.entities.camera.get(self.active_camera);
         self.paint_system.redraw(
             &self.config,
             &self.frame,
             camera,
             &self.console,
-            &self.entity_system,
+            &self.entities,
         );
     }
 }
