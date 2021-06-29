@@ -5,7 +5,13 @@ use wgpu::{
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{app::AppConfig, camera::Camera, console::Console, entity::EntityPool, time::Frame};
+use crate::{
+    app::AppConfig,
+    camera::Camera,
+    console::Console,
+    entity::{Entity, EntityPool},
+    time::Frame,
+};
 
 use self::{overlay::OverlayPainter, scene::ScenePainter};
 
@@ -31,6 +37,7 @@ pub struct PaintContext<'surface> {
 pub struct PaintSystem {
     surface: PaintSurface,
     fallback_camera: Camera,
+    pub active_camera: Option<Entity>,
     pub scene: ScenePainter,
     pub overlay: OverlayPainter,
 }
@@ -70,6 +77,7 @@ impl PaintSystem {
         let world_painter = ScenePainter::new(&device, &swapchain_desc);
         let overlay_painter = OverlayPainter::new(&device);
         Self {
+            active_camera: None,
             fallback_camera: Camera::new(10.0, 0.1),
             surface: PaintSurface {
                 surface,
@@ -98,11 +106,16 @@ impl PaintSystem {
         &mut self,
         state: &AppConfig,
         frame: &Frame,
-        camera: Option<&Camera>,
         console: &Console,
         entities: &EntityPool,
     ) {
-        let camera = camera.unwrap_or(&self.fallback_camera);
+        let camera = match self.active_camera {
+            Some(active_camera) => entities
+                .camera
+                .get(active_camera)
+                .unwrap_or(&self.fallback_camera),
+            None => &self.fallback_camera,
+        };
         let surface = &mut self.surface;
         let swapchain_texture = match surface.swapchain.get_current_frame() {
             Ok(frame) => frame.output,

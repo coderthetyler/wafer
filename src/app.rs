@@ -33,8 +33,6 @@ pub struct Application {
     pub paint_system: PaintSystem,
     pub movement_system: MovementSystem,
 
-    pub active_camera: Entity,
-
     frame: Frame,
 }
 
@@ -51,8 +49,6 @@ impl Application {
             paint_system,
             movement_system: MovementSystem::new(),
 
-            active_camera: Entity::none(),
-
             frame: Frame::new(),
         };
 
@@ -60,7 +56,7 @@ impl Application {
         app.entities
             .camera
             .set(player_camera, Camera::new(20.0, 0.1));
-        app.active_camera = player_camera;
+        app.paint_system.active_camera = Some(player_camera);
 
         let cube_friend_0 = app.entities.pool.allocate();
         app.entities.velocity.set(
@@ -210,13 +206,7 @@ impl Application {
         self.frame.record();
         self.input_system.update(&self.frame, &mut self.entities);
         self.movement_system.update(&self.frame, &mut self.entities);
-        let camera = self.entities.camera.get(self.active_camera);
-        self.paint_system.redraw(
-            &self.config,
-            &self.frame,
-            camera,
-            &self.console,
-            &self.entities,
-        );
+        self.paint_system
+            .redraw(&self.config, &self.frame, &self.console, &self.entities);
     }
 }
