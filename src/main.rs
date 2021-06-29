@@ -12,8 +12,8 @@ mod entity;
 mod generation;
 mod geometry;
 mod input;
+mod movement;
 mod paint;
-mod physics;
 mod planets;
 mod time;
 

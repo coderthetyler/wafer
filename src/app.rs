@@ -11,26 +11,28 @@ use crate::{
     entity::EntitySystem,
     geometry::{Position, Rotation, Vec3f, Volume},
     input::{CameraInputContext, EventAction, InputSystem},
+    movement::MovementSystem,
     paint::PaintSystem,
-    physics::PhysicsSystem,
     time::Frame,
 };
 
 #[derive(Default)]
-pub struct State {
+pub struct Configuration {
     pub hide_debug_overlay: bool,
     pub show_collider_volumes: bool,
+    pub should_exit: bool,
 }
 
 pub struct Application {
-    pub state: State,
+    pub config: Configuration,
     pub window: Window,
     pub console: Console,
+
     pub paint_system: PaintSystem,
     pub entity_system: EntitySystem,
     pub input_system: InputSystem,
-    pub physics_system: PhysicsSystem,
-    pub close_requested: bool,
+    pub movement_system: MovementSystem,
+
     fallback_camera: Camera,
     frame: Frame,
 }
@@ -39,15 +41,14 @@ impl Application {
     pub async fn new(window: Window) -> Self {
         let paint_system = PaintSystem::new(&window).await;
         let mut app = Application {
-            state: State::default(),
+            config: Configuration::default(),
             window,
             console: Console::new(),
             paint_system,
             entity_system: EntitySystem::new(),
             input_system: InputSystem::new(),
-            physics_system: PhysicsSystem::new(),
+            movement_system: MovementSystem::new(),
             fallback_camera: Camera::new(10.0, 0.1),
-            close_requested: false,
             frame: Frame::new(),
         };
 
@@ -152,7 +153,7 @@ impl Application {
                 action.perform(self);
             }
         }
-        if self.close_requested {
+        if self.config.should_exit {
             *control_flow = ControlFlow::Exit;
         }
     }
@@ -174,7 +175,7 @@ impl Application {
                 ref event,
             } if self.window.id() == *window_id => match event {
                 WindowEvent::CloseRequested => {
-                    self.close_requested = true;
+                    self.config.should_exit = true;
                     return EventAction::Consumed;
                 }
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
@@ -203,14 +204,14 @@ impl Application {
         self.frame.record();
         self.input_system
             .update(&self.frame, &mut self.entity_system);
-        self.physics_system
+        self.movement_system
             .update(&self.frame, &mut self.entity_system);
         let camera = self
             .entity_system
             .get_selected_camera()
             .unwrap_or(&self.fallback_camera);
         self.paint_system.redraw(
-            &self.state,
+            &self.config,
             &self.frame,
             camera,
             &self.console,

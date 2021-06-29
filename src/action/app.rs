@@ -15,13 +15,13 @@ impl ActionType for AppAction {
     fn perform(self, app: &mut Application) {
         match self {
             AppAction::RequestClose => {
-                app.close_requested = true;
+                app.config.should_exit = true;
             }
             AppAction::ToggleDebugOverlay => {
-                app.state.hide_debug_overlay ^= true;
+                app.config.hide_debug_overlay ^= true;
             }
             AppAction::ToglePaintColliderVolumes => {
-                app.state.show_collider_volumes ^= true;
+                app.config.show_collider_volumes ^= true;
             }
         }
     }

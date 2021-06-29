@@ -1,8 +1,8 @@
 use crate::{entity::EntitySystem, time::Frame};
 
-pub struct PhysicsSystem {}
+pub struct MovementSystem {}
 
-impl PhysicsSystem {
+impl MovementSystem {
     pub fn new() -> Self {
         Self {}
     }
@@ -10,7 +10,6 @@ impl PhysicsSystem {
     pub fn update(&self, frame: &Frame, entity_system: &mut EntitySystem) {
         let delta = frame.delta.as_f32();
         for entity in entity_system.entities.iter() {
-            // position
             if let (Some(pos), Some(vel)) = (
                 entity_system.positions.get_mut(entity),
                 entity_system.velocities.get(entity),
@@ -20,7 +19,6 @@ impl PhysicsSystem {
                 pos.z += vel.z * delta;
             }
 
-            // rotation
             if let (Some(rot), Some(vel)) = (
                 entity_system.rotations.get_mut(entity),
                 entity_system.angular_velocities.get(entity),

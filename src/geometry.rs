@@ -3,8 +3,6 @@ use std::ops::Add;
 /// A simple mesh used to detect collisions.
 pub enum Volume {
     Box { x: f32, y: f32, z: f32 },
-    Sphere { radius: f32 },
-    Pill { height: f32, radius: f32 },
 }
 
 #[derive(Clone, Copy, Debug)]

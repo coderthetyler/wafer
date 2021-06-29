@@ -5,7 +5,9 @@ use wgpu::{
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{app::State, camera::Camera, console::Console, entity::EntitySystem, time::Frame};
+use crate::{
+    app::Configuration, camera::Camera, console::Console, entity::EntitySystem, time::Frame,
+};
 
 use self::{overlay::OverlayPainter, scene::ScenePainter};
 
@@ -94,7 +96,7 @@ impl PaintSystem {
 
     pub fn redraw(
         &mut self,
-        state: &State,
+        state: &Configuration,
         frame: &Frame,
         camera: &Camera,
         console: &Console,

@@ -1,6 +1,5 @@
-use std::ops::{Mul, MulAssign};
 
-use cgmath::{Deg, Matrix4, Rotation3, SquareMatrix};
+use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{util::DeviceExt, BindGroupLayout, Device};
 
 use crate::{entity::{Entity, EntitySystem}, geometry::Volume, paint::texture::Texture};
