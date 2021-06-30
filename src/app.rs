@@ -10,13 +10,13 @@ use crate::{
     console::Console,
     entity::{EntityComponents, EntityPool},
     geometry::{Position, Rotation, Volume},
-    input::{puppet::PuppetInputContext, EventAction},
+    input::{scene::SceneInputContext, EventAction},
     movement::{MovementSystem, Spin, Velocity},
     paint::PaintSystem,
-    puppet::Puppet,
-    time::Frame,
+    puppet::{Puppet, PuppetSystem},
+    frame::Frame,
 };
-use crate::{input::InputReceiver, puppet::camera::FreeCameraPuppet};
+use crate::{input::EventInterpreter, puppet::camera::FreeCameraPuppet};
 
 #[derive(Default)]
 pub struct AppConfig {
@@ -29,15 +29,17 @@ pub struct Application {
     pub config: AppConfig,
     pub window: Window,
     pub console: Console,
+
     pub entities: EntityPool,
     pub components: EntityComponents,
 
     pub paint_system: PaintSystem,
     pub movement_system: MovementSystem,
+    pub puppet_system: PuppetSystem,
 
-    pub input_receiver: InputReceiver,
+    pub interpreter: EventInterpreter,
 
-    frame: Frame,
+    pub frame: Frame,
 }
 
 impl Application {
@@ -51,10 +53,11 @@ impl Application {
             entities: EntityPool::new(),
             components: EntityComponents::new(),
 
-            input_receiver: InputReceiver::new(),
             paint_system,
             movement_system: MovementSystem::new(),
+            puppet_system: PuppetSystem::new(),
 
+            interpreter: EventInterpreter::new(),
             frame: Frame::new(),
         };
 
@@ -149,10 +152,7 @@ impl Application {
             },
         );
 
-        if let Some(action) = app
-            .input_receiver
-            .push_context(PuppetInputContext::new().into())
-        {
+        if let Some(action) = app.interpreter.push_context(SceneInputContext::new()) {
             action.perform(&mut app);
         }
 
@@ -163,12 +163,9 @@ impl Application {
         let action = self.process_app_event(event);
         match action {
             EventAction::Unconsumed => {
-                if let EventAction::React(action) = self.input_receiver.receive_event(
-                    &mut self.entities,
-                    &mut self.components,
-                    &self.window.id(),
-                    event,
-                ) {
+                if let EventAction::React(action) =
+                    self.interpreter.consume(&self.window.id(), event)
+                {
                     action.perform(self);
                 };
             }
@@ -229,17 +226,18 @@ impl Application {
     }
 
     fn redraw(&mut self) {
-        self.frame.record();
-        self.input_receiver
-            .update(&self.frame, &mut self.entities, &mut self.components);
-        self.movement_system
-            .update(&self.frame, &self.entities, &mut self.components);
+        self.frame.start();
         self.paint_system.redraw(
             &self.config,
             &self.frame,
             &self.console,
             &self.entities,
-            &mut self.components,
+            &self.components,
         );
+        self.movement_system
+            .update(&self.frame, &self.entities, &mut self.components);
+        self.puppet_system
+            .update(&self.frame, &mut self.entities, &mut self.components);
+        self.frame.end();
     }
 }

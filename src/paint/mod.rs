@@ -10,7 +10,7 @@ use crate::{
     camera::Camera,
     console::Console,
     entity::{Entity, EntityComponents, EntityPool},
-    time::Frame,
+    frame::Frame,
 };
 
 use self::{overlay::OverlayPainter, scene::ScenePainter};

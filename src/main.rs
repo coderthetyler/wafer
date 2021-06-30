@@ -9,6 +9,7 @@ mod app;
 mod camera;
 mod console;
 mod entity;
+mod frame;
 mod generation;
 mod geometry;
 mod input;

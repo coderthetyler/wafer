@@ -1,10 +1,7 @@
-use winit::{event::Event, window::WindowId};
-
 use crate::{
     entity::{Entity, EntityComponents, EntityDelta, EntityPool},
-    input::EventAction,
+    frame::Frame,
     payload::Payload,
-    time::Frame,
 };
 
 use self::camera::FreeCameraPuppet;
@@ -19,10 +16,10 @@ pub enum Puppet {
 }
 
 impl Puppet {
-    /// Update the puppet at the end of the frame.
-    pub fn post_update(&mut self, frame: &Frame) {
+    /// Update the puppet at the start of the frame.
+    pub fn pre_update(&mut self, frame: &Frame) {
         match self {
-            Puppet::FreeCamera(puppet) => puppet.post_update(frame),
+            Puppet::FreeCamera(puppet) => puppet.pre_update(frame),
         }
     }
 
@@ -37,17 +34,15 @@ impl Puppet {
             Puppet::FreeCamera(puppet) => puppet.gen_deltas(frame, entity, components),
         }
     }
-
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
-        match self {
-            Puppet::FreeCamera(controller) => controller.receive_event(windowid, event),
-        }
-    }
 }
 
 pub struct PuppetSystem {}
 
 impl PuppetSystem {
+    pub fn new() -> Self {
+        Self {}
+    }
+
     pub fn update(
         &self,
         frame: &Frame,
@@ -55,16 +50,16 @@ impl PuppetSystem {
         components: &mut EntityComponents,
     ) {
         for entity in entities.iter() {
+            if let Some(puppet) = components.puppet.get_mut(entity) {
+                puppet.pre_update(frame);
+            }
+        }
+        for entity in entities.iter() {
             if let Some(puppet) = components.puppet.get(entity) {
                 puppet
                     .gen_deltas(frame, entity, components)
                     .iter()
                     .for_each(|delta| delta.apply_to(entity, components));
-            }
-        }
-        for entity in entities.iter() {
-            if let Some(puppet) = components.puppet.get_mut(entity) {
-                puppet.post_update(frame);
             }
         }
     }

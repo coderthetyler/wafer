@@ -1,20 +1,18 @@
 use winit::{event::Event, window::WindowId};
 
-use crate::action::Action;
-use crate::entity::{EntityComponents, EntityPool};
-use crate::time::Frame;
+use crate::action::{Action, ConsoleAction, SceneAction};
 
 use self::console::ConsoleInputContext;
-use self::puppet::PuppetInputContext;
+use self::scene::SceneInputContext;
 
 pub mod console;
-pub mod puppet;
+pub mod scene;
 
-pub struct InputReceiver {
+pub struct EventInterpreter {
     context_stack: Vec<InputContext>,
 }
 
-impl InputReceiver {
+impl EventInterpreter {
     pub fn new() -> Self {
         Self {
             context_stack: vec![],
@@ -22,8 +20,11 @@ impl InputReceiver {
     }
 
     /// Make the given `context` the top-most selected input context.
-    pub fn push_context(&mut self, context: InputContext) -> Option<Action> {
-        let mut context = context;
+    pub fn push_context<C>(&mut self, context: C) -> Option<Action>
+    where
+        C: Into<InputContext>,
+    {
+        let mut context = context.into();
         let action = context.on_active();
         self.context_stack.push(context);
         action
@@ -39,29 +40,11 @@ impl InputReceiver {
         }
     }
 
-    /// Update the active input context, if any.
-    pub fn update(
-        &mut self,
-        frame: &Frame,
-        entities: &mut EntityPool,
-        components: &mut EntityComponents,
-    ) {
-        if let Some(context) = self.context_stack.last_mut() {
-            context.update(frame, entities, components);
-        }
-    }
-
     /// Pass the `event` to the active input context, if any.
     /// Returns `true` if the context consumed the event.
-    pub fn receive_event(
-        &mut self,
-        entities: &mut EntityPool,
-        components: &mut EntityComponents,
-        windowid: &WindowId,
-        event: &Event<()>,
-    ) -> EventAction {
+    pub fn consume(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         if let Some(context) = self.context_stack.last_mut() {
-            context.receive_event(entities, components, windowid, event)
+            context.interpret(windowid, event)
         } else {
             EventAction::Unconsumed
         }
@@ -83,47 +66,44 @@ impl From<Action> for EventAction {
     }
 }
 
+impl From<ConsoleAction> for EventAction {
+    fn from(action: ConsoleAction) -> Self {
+        EventAction::React(Action::Console(action))
+    }
+}
+
+impl From<SceneAction> for EventAction {
+    fn from(action: SceneAction) -> Self {
+        EventAction::React(Action::Scene(action))
+    }
+}
+
+/// Each input context has its own bindings.
+/// Contexts may safely bind different actions to the same events.
 pub enum InputContext {
-    Puppet(PuppetInputContext),
+    Scene(SceneInputContext),
     Console(ConsoleInputContext),
 }
 
 impl InputContext {
     fn on_active(&mut self) -> Option<Action> {
         match self {
-            InputContext::Puppet(context) => context.on_active(),
+            InputContext::Scene(context) => context.on_active(),
             InputContext::Console(context) => context.on_active(),
         }
     }
 
-    fn receive_event(
-        &mut self,
-        entities: &mut EntityPool,
-        components: &mut EntityComponents,
-        windowid: &WindowId,
-        event: &Event<()>,
-    ) -> EventAction {
+    fn interpret(&mut self, wid: &WindowId, event: &Event<()>) -> EventAction {
         match self {
-            InputContext::Puppet(context) => {
-                context.receive_event(entities, components, windowid, event)
-            }
-            InputContext::Console(context) => {
-                context.receive_event(entities, components, windowid, event)
-            }
-        }
-    }
-
-    fn update(&self, frame: &Frame, entities: &mut EntityPool, components: &mut EntityComponents) {
-        match self {
-            InputContext::Puppet(context) => context.update(frame, entities, components),
-            InputContext::Console(context) => context.update(frame, entities, components),
+            InputContext::Scene(context) => context.interpret(wid, event),
+            InputContext::Console(context) => context.interpret(wid, event),
         }
     }
 }
 
-impl From<PuppetInputContext> for InputContext {
-    fn from(context: PuppetInputContext) -> Self {
-        InputContext::Puppet(context)
+impl From<SceneInputContext> for InputContext {
+    fn from(context: SceneInputContext) -> Self {
+        InputContext::Scene(context)
     }
 }
 

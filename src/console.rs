@@ -130,9 +130,6 @@ impl Console {
     }
 }
 
-#[derive(PartialEq, Debug)]
-pub enum ConsoleCommand {}
-
 #[cfg(test)]
 mod test {
     use super::*;

@@ -1,7 +1,7 @@
 use crate::{
     entity::{EntityComponents, EntityPool},
+    frame::Frame,
     geometry::Vec3f,
-    time::Frame,
 };
 
 pub type Spin = Vec3f;

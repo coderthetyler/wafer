@@ -4,14 +4,11 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{
-    action::{Action, ConsoleAction, WindowAction},
-    entity::{EntityComponents, EntityPool},
-    time::Frame,
-};
+use crate::action::{Action, ConsoleAction, WindowAction};
 
 use super::EventAction;
 
+/// Interprets events as inputs to the console.
 pub struct ConsoleInputContext {}
 
 impl ConsoleInputContext {
@@ -26,29 +23,23 @@ impl ConsoleInputContext {
     }
 
     #[allow(clippy::single_match, clippy::collapsible_match)]
-    pub fn receive_event(
-        &mut self,
-        entities: &mut EntityPool,
-        components: &mut EntityComponents,
-        windowid: &WindowId,
-        event: &Event<()>,
-    ) -> EventAction {
+    pub fn interpret(&mut self, wid: &WindowId, event: &Event<()>) -> EventAction {
         fn receive_virtual_keycode(code: VirtualKeyCode) -> EventAction {
             match code {
-                VirtualKeyCode::Escape => Action::Console(ConsoleAction::Hide).into(),
-                VirtualKeyCode::Return => Action::Console(ConsoleAction::Submit).into(),
-                VirtualKeyCode::Back => Action::Console(ConsoleAction::Backspace).into(),
-                VirtualKeyCode::Up => Action::Console(ConsoleAction::NavigateBackwards).into(),
-                VirtualKeyCode::Down => Action::Console(ConsoleAction::NavigateForwards).into(),
-                VirtualKeyCode::Left => Action::Console(ConsoleAction::ShiftLeft).into(),
-                VirtualKeyCode::Right => Action::Console(ConsoleAction::ShiftRight).into(),
-                VirtualKeyCode::Home => Action::Console(ConsoleAction::ShiftHome).into(),
-                VirtualKeyCode::End => Action::Console(ConsoleAction::ShiftEnd).into(),
+                VirtualKeyCode::Escape => ConsoleAction::Hide.into(),
+                VirtualKeyCode::Return => ConsoleAction::Submit.into(),
+                VirtualKeyCode::Back => ConsoleAction::Backspace.into(),
+                VirtualKeyCode::Up => ConsoleAction::NavigateBackwards.into(),
+                VirtualKeyCode::Down => ConsoleAction::NavigateForwards.into(),
+                VirtualKeyCode::Left => ConsoleAction::ShiftLeft.into(),
+                VirtualKeyCode::Right => ConsoleAction::ShiftRight.into(),
+                VirtualKeyCode::Home => ConsoleAction::ShiftHome.into(),
+                VirtualKeyCode::End => ConsoleAction::ShiftEnd.into(),
                 _ => EventAction::Unconsumed,
             }
         }
         match event {
-            Event::WindowEvent { window_id, event } if windowid == window_id => match event {
+            Event::WindowEvent { window_id, event } if wid == window_id => match event {
                 WindowEvent::ReceivedCharacter(received_char) => {
                     let ascii_char = AsciiChar::from_ascii(*received_char);
                     if let Ok(ascii_char) = ascii_char {
@@ -69,14 +60,5 @@ impl ConsoleInputContext {
             _ => {}
         }
         EventAction::Unconsumed
-    }
-
-    pub fn update(
-        &self,
-        frame: &Frame,
-        entities: &mut EntityPool,
-        components: &mut EntityComponents,
-    ) {
-        // TODO do input contexts really need this method?
     }
 }
