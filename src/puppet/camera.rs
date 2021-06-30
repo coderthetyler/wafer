@@ -1,43 +1,29 @@
-use cgmath::{InnerSpace, Vector3};
+use cgmath::{Angle, Deg, InnerSpace, Vector3};
 use winit::{
     event::{DeviceEvent, ElementState, Event, VirtualKeyCode, WindowEvent},
     window::WindowId,
 };
 
 use crate::{
-    action::{Action, ConsoleAction, WindowAction},
-    entity::{Entity, EntityPool},
+    action::{Action, ConsoleAction},
+    geometry::{Position, Rotation},
+    input::EventAction,
     time::Frame,
 };
 
-use super::{EventAction, InputContextType};
-
-pub struct CameraInputContext {
-    camera: Entity,
+#[derive(Default)]
+pub struct FreeCameraPuppet {
     is_up_pressed: bool,
     is_down_pressed: bool,
     is_forward_pressed: bool,
     is_backward_pressed: bool,
     is_left_pressed: bool,
     is_right_pressed: bool,
-    mouse_deltas: [(f64, f64); CameraInputContext::MOUSE_SMOOTH_FRAMES],
+    mouse_deltas: [(f64, f64); Self::MOUSE_SMOOTH_FRAMES],
 }
 
-impl CameraInputContext {
+impl FreeCameraPuppet {
     const MOUSE_SMOOTH_FRAMES: usize = 4;
-
-    pub fn new(camera: Entity) -> Self {
-        Self {
-            camera,
-            is_up_pressed: false,
-            is_down_pressed: false,
-            is_forward_pressed: false,
-            is_backward_pressed: false,
-            is_left_pressed: false,
-            is_right_pressed: false,
-            mouse_deltas: [(0.0, 0.0); Self::MOUSE_SMOOTH_FRAMES],
-        }
-    }
 
     pub fn mouse_delta(&self) -> (f64, f64) {
         let mut delta = (0.0, 0.0);
@@ -59,21 +45,15 @@ impl CameraInputContext {
         );
     }
 
-    fn shift_mouse_deltas(&mut self) {
+    fn rotate_mouse_deltas(&mut self) {
         for i in (1..Self::MOUSE_SMOOTH_FRAMES).rev() {
             self.mouse_deltas[i] = self.mouse_deltas[i - 1];
         }
         self.mouse_deltas[0] = (0.0, 0.0);
     }
-}
-
-impl InputContextType for CameraInputContext {
-    fn on_active(&mut self) -> Option<Action> {
-        Some(Action::Window(WindowAction::GrabCursor))
-    }
 
     #[allow(clippy::collapsible_match, clippy::single_match)]
-    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         match event {
             Event::DeviceEvent { ref event, .. } => match event {
                 DeviceEvent::MouseMotion { delta } => {
@@ -128,9 +108,9 @@ impl InputContextType for CameraInputContext {
         }
     }
 
-    fn get_forward_vector(&self) -> [f32; 3] {
-        let yaw = Deg(-self.yaw);
-        let pitch = Deg(-self.pitch);
+    fn get_forward_vector(yaw: f32, pitch: f32) -> [f32; 3] {
+        let yaw = Deg(-yaw);
+        let pitch = Deg(-pitch);
         [
             pitch.cos() * yaw.sin(),
             -pitch.sin(),
@@ -138,23 +118,37 @@ impl InputContextType for CameraInputContext {
         ]
     }
 
-    fn get_right_vector(&self) -> [f32; 3] {
-        let yaw = Deg(-self.yaw);
+    fn get_right_vector(yaw: f32) -> [f32; 3] {
+        let yaw = Deg(-yaw);
         [-yaw.cos(), 0.0, yaw.sin()]
     }
 
-    fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
-        if let Some(camera) = entities.camera.get_mut(self.camera) {
-            let speed = camera.speed * frame.delta.as_f32();
-            let (yaw_delta, pitch_delta) = self.mouse_delta();
-            camera.yaw += yaw_delta as f32 * camera.sensitivity;
-            camera.yaw %= 360.0;
-            camera.pitch += pitch_delta as f32 * camera.sensitivity;
-            camera.pitch = camera.pitch.min(90.0).max(-90.0);
+    pub fn update(
+        &mut self,
+        frame: &Frame,
+        position: Option<&mut Position>,
+        rotation: Option<&mut Rotation>,
+    ) {
+        if let (Some(pos), Some(rot)) = (position, rotation) {
+            let speed = 20.0;
+            let sensitivity = 0.1;
 
-            let forward: Vector3<f32> = camera.get_forward_vector().into();
+            let speed = speed * frame.delta.as_f32();
+            let (yaw_delta, pitch_delta) = self.mouse_delta();
+
+            // yaw
+            rot.y += yaw_delta as f32 * sensitivity;
+            rot.y %= 360.0;
+            let yaw = rot.y;
+
+            // pitch
+            rot.x += pitch_delta as f32 * sensitivity;
+            rot.x = rot.x.min(90.0).max(-90.0);
+            let pitch = rot.x;
+
+            let forward: Vector3<f32> = Self::get_forward_vector(yaw, pitch).into();
             let forward = forward.normalize();
-            let right: Vector3<f32> = camera.get_right_vector().into();
+            let right: Vector3<f32> = Self::get_right_vector(yaw).into();
             let right = right.normalize();
             let up: Vector3<f32> = forward.cross(right).normalize();
 
@@ -179,9 +173,11 @@ impl InputContextType for CameraInputContext {
             }
             if delta.magnitude2() != 0.0 {
                 let delta = speed * delta.normalize();
-                camera.position += delta;
+                pos.x += delta.x;
+                pos.y += delta.y;
+                pos.z += delta.z;
             }
         }
-        self.shift_mouse_deltas();
+        self.rotate_mouse_deltas();
     }
 }

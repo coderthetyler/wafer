@@ -1,6 +1,6 @@
 use ascii::AsciiChar;
 
-use crate::{app::Application, input::ConsoleInputContext};
+use crate::{app::Application, input::console::ConsoleInputContext};
 
 use super::{Action, ActionType};
 
@@ -35,13 +35,13 @@ impl ActionType for ConsoleAction {
             ConsoleAction::Show => {
                 app.console.show();
                 let context = ConsoleInputContext::new();
-                if let Some(action) = app.input_system.push_context(context.into()) {
+                if let Some(action) = app.input_receiver.push_context(context.into()) {
                     action.perform(app);
                 }
             }
             ConsoleAction::Hide => {
                 app.console.hide();
-                if let Some(action) = app.input_system.pop_context() {
+                if let Some(action) = app.input_receiver.pop_context() {
                     action.perform(app);
                 }
             }

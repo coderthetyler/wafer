@@ -1,20 +1,20 @@
 use winit::{event::Event, window::WindowId};
 
 use crate::action::Action;
-use crate::entity::EntityPool;
+use crate::entity::{EntityComponents, EntityPool};
 use crate::time::Frame;
 
-pub use self::camera::CameraInputContext;
-pub use self::console::ConsoleInputContext;
+use self::console::ConsoleInputContext;
+use self::puppet::PuppetInputContext;
 
-mod camera;
-mod console;
+pub mod console;
+pub mod puppet;
 
-pub struct InputSystem {
+pub struct InputReceiver {
     context_stack: Vec<InputContext>,
 }
 
-impl InputSystem {
+impl InputReceiver {
     pub fn new() -> Self {
         Self {
             context_stack: vec![],
@@ -40,17 +40,28 @@ impl InputSystem {
     }
 
     /// Update the active input context, if any.
-    pub fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
+    pub fn update(
+        &mut self,
+        frame: &Frame,
+        entities: &mut EntityPool,
+        components: &mut EntityComponents,
+    ) {
         if let Some(context) = self.context_stack.last_mut() {
-            context.update(frame, entities);
+            context.update(frame, entities, components);
         }
     }
 
     /// Pass the `event` to the active input context, if any.
     /// Returns `true` if the context consumed the event.
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    pub fn receive_event(
+        &mut self,
+        entities: &mut EntityPool,
+        components: &mut EntityComponents,
+        windowid: &WindowId,
+        event: &Event<()>,
+    ) -> EventAction {
         if let Some(context) = self.context_stack.last_mut() {
-            context.receive_event(windowid, event)
+            context.receive_event(entities, components, windowid, event)
         } else {
             EventAction::Unconsumed
         }
@@ -72,43 +83,47 @@ impl From<Action> for EventAction {
     }
 }
 
-pub trait InputContextType {
-    fn on_active(&mut self) -> Option<Action>;
-    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction;
-    fn update(&mut self, frame: &Frame, entities: &mut EntityPool);
-}
-
 pub enum InputContext {
-    Camera(CameraInputContext),
+    Scene(PuppetInputContext),
     Console(ConsoleInputContext),
 }
 
-impl InputContextType for InputContext {
+impl InputContext {
     fn on_active(&mut self) -> Option<Action> {
         match self {
-            InputContext::Camera(context) => context.on_active(),
+            InputContext::Scene(context) => context.on_active(),
             InputContext::Console(context) => context.on_active(),
         }
     }
 
-    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    fn receive_event(
+        &mut self,
+        entities: &mut EntityPool,
+        components: &mut EntityComponents,
+        windowid: &WindowId,
+        event: &Event<()>,
+    ) -> EventAction {
         match self {
-            InputContext::Camera(context) => context.receive_event(windowid, event),
-            InputContext::Console(context) => context.receive_event(windowid, event),
+            InputContext::Scene(context) => {
+                context.receive_event(entities, components, windowid, event)
+            }
+            InputContext::Console(context) => {
+                context.receive_event(entities, components, windowid, event)
+            }
         }
     }
 
-    fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
+    fn update(&self, frame: &Frame, entities: &mut EntityPool, components: &mut EntityComponents) {
         match self {
-            InputContext::Camera(context) => context.update(frame, entities),
-            InputContext::Console(context) => context.update(frame, entities),
+            InputContext::Scene(context) => context.update(frame, entities, components),
+            InputContext::Console(context) => context.update(frame, entities, components),
         }
     }
 }
 
-impl From<CameraInputContext> for InputContext {
-    fn from(context: CameraInputContext) -> Self {
-        InputContext::Camera(context)
+impl From<PuppetInputContext> for InputContext {
+    fn from(context: PuppetInputContext) -> Self {
+        InputContext::Scene(context)
     }
 }
 

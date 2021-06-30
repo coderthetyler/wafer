@@ -15,6 +15,7 @@ mod input;
 mod movement;
 mod paint;
 mod planets;
+mod puppet;
 mod time;
 
 fn main() {

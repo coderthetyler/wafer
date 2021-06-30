@@ -8,13 +8,15 @@ use crate::{
     action::{Action, ActionType, ConfigAction},
     camera::Camera,
     console::Console,
-    entity::EntityPool,
+    entity::{EntityComponents, EntityPool},
     geometry::{Position, Rotation, Volume},
-    input::{CameraInputContext, EventAction, InputSystem},
+    input::{puppet::PuppetInputContext, EventAction},
     movement::{MovementSystem, Spin, Velocity},
     paint::PaintSystem,
+    puppet::Puppet,
     time::Frame,
 };
+use crate::{input::InputReceiver, puppet::camera::FreeCameraPuppet};
 
 #[derive(Default)]
 pub struct AppConfig {
@@ -28,10 +30,12 @@ pub struct Application {
     pub window: Window,
     pub console: Console,
     pub entities: EntityPool,
+    pub components: EntityComponents,
 
-    pub input_system: InputSystem,
     pub paint_system: PaintSystem,
     pub movement_system: MovementSystem,
+
+    pub input_receiver: InputReceiver,
 
     frame: Frame,
 }
@@ -43,18 +47,20 @@ impl Application {
             config: AppConfig::default(),
             window,
             console: Console::new(),
-            entities: EntityPool::new(),
 
-            input_system: InputSystem::new(),
+            entities: EntityPool::new(),
+            components: EntityComponents::new(),
+
+            input_receiver: InputReceiver::new(),
             paint_system,
             movement_system: MovementSystem::new(),
 
             frame: Frame::new(),
         };
 
-        let player = app.entities.pool.allocate();
-        app.entities.camera.set(player, Camera::new());
-        app.entities.position.set(
+        let player = app.entities.allocate();
+        app.components.camera.set(player, Camera::new());
+        app.components.position.set(
             player,
             Position {
                 x: 0.0,
@@ -62,7 +68,7 @@ impl Application {
                 z: 32.0,
             },
         );
-        app.entities.rotation.set(
+        app.components.rotation.set(
             player,
             Rotation {
                 x: 0.0,
@@ -70,10 +76,13 @@ impl Application {
                 z: 0.0,
             },
         );
+        app.components
+            .puppet
+            .set(player, Puppet::FreeCamera(FreeCameraPuppet::default()));
         app.paint_system.active_camera = player;
 
-        let cube_friend_0 = app.entities.pool.allocate();
-        app.entities.velocity.set(
+        let cube_friend_0 = app.entities.allocate();
+        app.components.velocity.set(
             cube_friend_0,
             Velocity {
                 x: 0.2,
@@ -81,7 +90,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.entities.position.set(
+        app.components.position.set(
             cube_friend_0,
             Position {
                 x: 0.0,
@@ -89,7 +98,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.entities.colliders.set(
+        app.components.colliders.set(
             cube_friend_0,
             Volume::Box {
                 x: 0.75,
@@ -97,7 +106,7 @@ impl Application {
                 z: 0.75,
             },
         );
-        app.entities.rotation.set(
+        app.components.rotation.set(
             cube_friend_0,
             Rotation {
                 x: 45.0,
@@ -105,7 +114,7 @@ impl Application {
                 z: 45.0,
             },
         );
-        app.entities.spin.set(
+        app.components.spin.set(
             cube_friend_0,
             Spin {
                 x: 2.0,
@@ -114,8 +123,8 @@ impl Application {
             },
         );
 
-        let cube_friend_1 = app.entities.pool.allocate();
-        app.entities.velocity.set(
+        let cube_friend_1 = app.entities.allocate();
+        app.components.velocity.set(
             cube_friend_1,
             Velocity {
                 x: -0.1,
@@ -123,7 +132,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.entities.position.set(
+        app.components.position.set(
             cube_friend_1,
             Position {
                 x: 8.0,
@@ -131,7 +140,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.entities.colliders.set(
+        app.components.colliders.set(
             cube_friend_1,
             Volume::Box {
                 x: 0.75,
@@ -141,8 +150,8 @@ impl Application {
         );
 
         if let Some(action) = app
-            .input_system
-            .push_context(CameraInputContext::new(player).into())
+            .input_receiver
+            .push_context(PuppetInputContext::new().into())
         {
             action.perform(&mut app);
         }
@@ -154,9 +163,12 @@ impl Application {
         let action = self.process_app_event(event);
         match action {
             EventAction::Unconsumed => {
-                if let EventAction::React(action) =
-                    self.input_system.receive_event(&self.window.id(), event)
-                {
+                if let EventAction::React(action) = self.input_receiver.receive_event(
+                    &mut self.entities,
+                    &mut self.components,
+                    &self.window.id(),
+                    event,
+                ) {
                     action.perform(self);
                 };
             }
@@ -218,9 +230,16 @@ impl Application {
 
     fn redraw(&mut self) {
         self.frame.record();
-        self.input_system.update(&self.frame, &mut self.entities);
-        self.movement_system.update(&self.frame, &mut self.entities);
-        self.paint_system
-            .redraw(&self.config, &self.frame, &self.console, &self.entities);
+        self.input_receiver
+            .update(&self.frame, &mut self.entities, &mut self.components);
+        self.movement_system
+            .update(&self.frame, &self.entities, &mut self.components);
+        self.paint_system.redraw(
+            &self.config,
+            &self.frame,
+            &self.console,
+            &self.entities,
+            &mut self.components,
+        );
     }
 }

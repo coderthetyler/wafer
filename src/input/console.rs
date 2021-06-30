@@ -6,11 +6,11 @@ use winit::{
 
 use crate::{
     action::{Action, ConsoleAction, WindowAction},
-    entity::EntityPool,
+    entity::{EntityComponents, EntityPool},
     time::Frame,
 };
 
-use super::{EventAction, InputContextType};
+use super::EventAction;
 
 pub struct ConsoleInputContext {}
 
@@ -20,13 +20,19 @@ impl ConsoleInputContext {
     }
 }
 
-impl InputContextType for ConsoleInputContext {
-    fn on_active(&mut self) -> Option<Action> {
+impl ConsoleInputContext {
+    pub fn on_active(&mut self) -> Option<Action> {
         Some(Action::Window(WindowAction::UngrabCursor))
     }
 
     #[allow(clippy::single_match, clippy::collapsible_match)]
-    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    pub fn receive_event(
+        &mut self,
+        entities: &mut EntityPool,
+        components: &mut EntityComponents,
+        windowid: &WindowId,
+        event: &Event<()>,
+    ) -> EventAction {
         fn receive_virtual_keycode(code: VirtualKeyCode) -> EventAction {
             match code {
                 VirtualKeyCode::Escape => Action::Console(ConsoleAction::Hide).into(),
@@ -65,7 +71,12 @@ impl InputContextType for ConsoleInputContext {
         EventAction::Unconsumed
     }
 
-    fn update(&mut self, frame: &Frame, entities: &mut EntityPool) {
+    pub fn update(
+        &self,
+        frame: &Frame,
+        entities: &mut EntityPool,
+        components: &mut EntityComponents,
+    ) {
         // TODO do input contexts really need this method?
     }
 }

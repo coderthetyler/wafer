@@ -9,7 +9,7 @@ use crate::{
     app::AppConfig,
     camera::Camera,
     console::Console,
-    entity::{Entity, EntityPool},
+    entity::{Entity, EntityComponents, EntityPool},
     time::Frame,
 };
 
@@ -108,8 +108,9 @@ impl PaintSystem {
         frame: &Frame,
         console: &Console,
         entities: &EntityPool,
+        components: &EntityComponents,
     ) {
-        let camera = entities
+        let camera = components
             .camera
             .get(self.active_camera)
             .unwrap_or(&self.fallback_camera);
@@ -129,8 +130,13 @@ impl PaintSystem {
         };
         // ctx: &mut PaintContext, camera: &Camera
         let commands: Vec<CommandBuffer> = vec![
-            self.scene
-                .paint(state, &mut context, self.active_camera, entities),
+            self.scene.paint(
+                state,
+                &mut context,
+                self.active_camera,
+                entities,
+                components,
+            ),
             self.overlay.draw(
                 state,
                 frame,

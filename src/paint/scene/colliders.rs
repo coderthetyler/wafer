@@ -2,7 +2,7 @@
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{util::DeviceExt, BindGroupLayout, Device};
 
-use crate::{entity::{Entity, EntityPool}, geometry::Volume, paint::texture::Texture};
+use crate::{entity::{Entity, EntityComponents, EntityPool}, geometry::Volume, paint::texture::Texture};
 
 /// All data required to draw collider volumes, if enabled.
 pub struct ColliderPainter {
@@ -118,11 +118,11 @@ impl ColliderPainter {
     }
 
     /// Update the painter with updated collider info
-    pub fn update(&mut self, device: &Device, entity_system: &EntityPool) {
+    pub fn update(&mut self, device: &Device, entities: &EntityPool, components: &EntityComponents) {
         /// Interpret an entity as an instance to draw
-        fn entity_to_instance(entity: Entity, entities: &EntityPool) -> Option<InstanceData> {
+        fn entity_to_instance(entity: Entity, components: &EntityComponents) -> Option<InstanceData> {
             if let (Some(pos), Some(Volume::Box { x, y, z })) =
-                (entities.position.get(entity), entities.colliders.get(entity))
+                (components.position.get(entity), components.colliders.get(entity))
             {
                 let mut model: Matrix4<f32> = cgmath::Matrix4::identity();
 
@@ -144,9 +144,9 @@ impl ColliderPainter {
         }
 
         // Construct instance buffer from box instances
-        let box_instances: Vec<InstanceData> = entity_system.pool
+        let box_instances: Vec<InstanceData> = entities
             .iter()
-            .filter_map(|idx| entity_to_instance(idx, entity_system))
+            .filter_map(|entity| entity_to_instance(entity, components))
             .collect();
         self.instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,

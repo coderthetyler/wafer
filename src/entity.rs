@@ -3,34 +3,33 @@ use crate::{
     generation::{GenerationalIndex, GenerationalIndexPool, GenerationalIndexVec},
     geometry::{Position, Rotation, Volume},
     movement::{Spin, Velocity},
+    puppet::Puppet,
 };
 
 pub type Entity = GenerationalIndex;
+pub type EntityPool = GenerationalIndexPool;
 pub type ComponentVec<T> = GenerationalIndexVec<T>;
 
-pub struct EntityPool {
-    pub pool: GenerationalIndexPool,
-
-    // Components
+pub struct EntityComponents {
     pub position: ComponentVec<Position>,
     pub velocity: ComponentVec<Velocity>,
     pub rotation: ComponentVec<Rotation>,
     pub spin: ComponentVec<Spin>,
     pub colliders: ComponentVec<Volume>,
     pub camera: ComponentVec<Camera>,
+    pub puppet: ComponentVec<Puppet>,
 }
 
-impl EntityPool {
+impl EntityComponents {
     pub fn new() -> Self {
         Self {
-            pool: GenerationalIndexPool::new(),
-
             position: ComponentVec::new(),
             velocity: ComponentVec::new(),
             rotation: ComponentVec::new(),
             spin: ComponentVec::new(),
             colliders: ComponentVec::new(),
             camera: ComponentVec::new(),
+            puppet: ComponentVec::new(),
         }
     }
 }
