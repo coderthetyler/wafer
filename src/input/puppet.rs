@@ -29,8 +29,8 @@ impl PuppetInputContext {
         event: &Event<()>,
     ) -> EventAction {
         for entity in entities.iter() {
-            if let Some(controller) = components.puppet.get_mut(entity) {
-                let result = controller.receive_event(windowid, event);
+            if let Some(puppet) = components.puppet.get_mut(entity) {
+                let result = puppet.receive_event(windowid, event);
                 if let EventAction::Unconsumed = result {
                 } else {
                     return result;
@@ -47,10 +47,16 @@ impl PuppetInputContext {
         components: &mut EntityComponents,
     ) {
         for entity in entities.iter() {
-            if let Some(controller) = components.puppet.get_mut(entity) {
-                let position = components.position.get_mut(entity);
-                let rotation = components.rotation.get_mut(entity);
-                controller.update(frame, position, rotation);
+            if let Some(puppet) = components.puppet.get(entity) {
+                puppet
+                    .gen_deltas(frame, entity, components)
+                    .iter()
+                    .for_each(|delta| delta.apply_to(entity, components));
+            }
+        }
+        for entity in entities.iter() {
+            if let Some(puppet) = components.puppet.get_mut(entity) {
+                puppet.post_update(frame);
             }
         }
     }

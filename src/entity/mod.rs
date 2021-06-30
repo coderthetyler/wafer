@@ -6,6 +6,10 @@ use crate::{
     puppet::Puppet,
 };
 
+pub use delta::EntityDelta;
+
+mod delta;
+
 pub type Entity = GenerationalIndex;
 pub type EntityPool = GenerationalIndexPool;
 pub type ComponentVec<T> = GenerationalIndexVec<T>;

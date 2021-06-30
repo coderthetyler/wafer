@@ -12,10 +12,34 @@ pub struct Position {
     pub z: f32,
 }
 
+impl Position {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
+        Self { x, y, z }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Rotation {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub pitch: f32,
+    pub yaw: f32,
+    pub roll: f32,
+}
+
+impl Rotation {
+    pub fn with_yaw(mut self, yaw: f32) -> Self {
+        self.yaw = yaw;
+        self
+    }
+
+    pub fn with_pitch(mut self, pitch: f32) -> Self {
+        self.pitch = pitch;
+        self
+    }
+
+    pub fn with_roll(mut self, roll: f32) -> Self {
+        self.roll = roll;
+        self
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

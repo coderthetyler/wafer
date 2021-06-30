@@ -84,14 +84,14 @@ impl From<Action> for EventAction {
 }
 
 pub enum InputContext {
-    Scene(PuppetInputContext),
+    Puppet(PuppetInputContext),
     Console(ConsoleInputContext),
 }
 
 impl InputContext {
     fn on_active(&mut self) -> Option<Action> {
         match self {
-            InputContext::Scene(context) => context.on_active(),
+            InputContext::Puppet(context) => context.on_active(),
             InputContext::Console(context) => context.on_active(),
         }
     }
@@ -104,7 +104,7 @@ impl InputContext {
         event: &Event<()>,
     ) -> EventAction {
         match self {
-            InputContext::Scene(context) => {
+            InputContext::Puppet(context) => {
                 context.receive_event(entities, components, windowid, event)
             }
             InputContext::Console(context) => {
@@ -115,7 +115,7 @@ impl InputContext {
 
     fn update(&self, frame: &Frame, entities: &mut EntityPool, components: &mut EntityComponents) {
         match self {
-            InputContext::Scene(context) => context.update(frame, entities, components),
+            InputContext::Puppet(context) => context.update(frame, entities, components),
             InputContext::Console(context) => context.update(frame, entities, components),
         }
     }
@@ -123,7 +123,7 @@ impl InputContext {
 
 impl From<PuppetInputContext> for InputContext {
     fn from(context: PuppetInputContext) -> Self {
-        InputContext::Scene(context)
+        InputContext::Puppet(context)
     }
 }
 

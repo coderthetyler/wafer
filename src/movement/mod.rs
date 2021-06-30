@@ -30,9 +30,9 @@ impl MovementSystem {
                 components.rotation.get_mut(entity),
                 components.spin.get(entity),
             ) {
-                rot.x += vel.x * delta;
-                rot.y += vel.y * delta;
-                rot.z += vel.z * delta;
+                rot.pitch += vel.x * delta;
+                rot.yaw += vel.y * delta;
+                rot.roll += vel.z * delta;
             }
         }
     }

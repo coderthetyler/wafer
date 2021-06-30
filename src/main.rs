@@ -14,6 +14,7 @@ mod geometry;
 mod input;
 mod movement;
 mod paint;
+mod payload;
 mod planets;
 mod puppet;
 mod time;

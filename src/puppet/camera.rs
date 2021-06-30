@@ -6,8 +6,10 @@ use winit::{
 
 use crate::{
     action::{Action, ConsoleAction},
-    geometry::{Position, Rotation},
+    entity::{Entity, EntityComponents, EntityDelta},
+    geometry::Rotation,
     input::EventAction,
+    payload::Payload,
     time::Frame,
 };
 
@@ -123,35 +125,48 @@ impl FreeCameraPuppet {
         [-yaw.cos(), 0.0, yaw.sin()]
     }
 
-    pub fn update(
-        &mut self,
+    pub fn post_update(&mut self, _: &Frame) {
+        self.rotate_mouse_deltas();
+    }
+
+    pub fn gen_deltas(
+        &self,
         frame: &Frame,
-        position: Option<&mut Position>,
-        rotation: Option<&mut Rotation>,
-    ) {
-        if let (Some(pos), Some(rot)) = (position, rotation) {
-            let speed = 20.0;
+        entity: Entity,
+        components: &EntityComponents,
+    ) -> Payload<EntityDelta> {
+        let mut payload: Payload<EntityDelta> = Payload::new();
+
+        let mut forward: Vector3<f32> = Vector3::unit_z();
+        let mut right: Vector3<f32> = -Vector3::unit_x();
+
+        // rotation
+        if let Some(rot) = components.rotation.get(entity) {
             let sensitivity = 0.1;
 
-            let speed = speed * frame.delta.as_f32();
             let (yaw_delta, pitch_delta) = self.mouse_delta();
+            let mut yaw = rot.yaw;
+            yaw += yaw_delta as f32 * sensitivity;
+            yaw %= 360.0;
 
-            // yaw
-            rot.y += yaw_delta as f32 * sensitivity;
-            rot.y %= 360.0;
-            let yaw = rot.y;
+            let mut pitch = rot.pitch;
+            pitch += pitch_delta as f32 * sensitivity;
+            pitch = pitch.min(90.0).max(-90.0);
 
-            // pitch
-            rot.x += pitch_delta as f32 * sensitivity;
-            rot.x = rot.x.min(90.0).max(-90.0);
-            let pitch = rot.x;
+            payload +=
+                EntityDelta::SetRotation(Rotation::default().with_yaw(yaw).with_pitch(pitch));
 
-            let forward: Vector3<f32> = Self::get_forward_vector(yaw, pitch).into();
-            let forward = forward.normalize();
-            let right: Vector3<f32> = Self::get_right_vector(yaw).into();
-            let right = right.normalize();
+            forward = Self::get_forward_vector(yaw, pitch).into();
+            right = Self::get_right_vector(yaw).into();
+            forward = forward.normalize();
+            right = right.normalize();
+        }
+
+        // position
+        if components.position.get(entity).is_some() {
+            let speed = 20.0;
+
             let up: Vector3<f32> = forward.cross(right).normalize();
-
             let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();
             if self.is_forward_pressed {
                 delta += forward;
@@ -172,12 +187,11 @@ impl FreeCameraPuppet {
                 delta -= right;
             }
             if delta.magnitude2() != 0.0 {
+                let speed = speed * frame.delta.as_f32();
                 let delta = speed * delta.normalize();
-                pos.x += delta.x;
-                pos.y += delta.y;
-                pos.z += delta.z;
+                payload += EntityDelta::Translate(delta.x, delta.y, delta.z);
             }
         }
-        self.rotate_mouse_deltas();
+        payload
     }
 }

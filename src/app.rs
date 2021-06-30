@@ -71,9 +71,9 @@ impl Application {
         app.components.rotation.set(
             player,
             Rotation {
-                x: 0.0,
-                y: 180.0,
-                z: 0.0,
+                pitch: 0.0,
+                yaw: 180.0,
+                roll: 0.0,
             },
         );
         app.components
@@ -109,9 +109,9 @@ impl Application {
         app.components.rotation.set(
             cube_friend_0,
             Rotation {
-                x: 45.0,
-                y: 45.0,
-                z: 45.0,
+                pitch: 45.0,
+                yaw: 45.0,
+                roll: 45.0,
             },
         );
         app.components.spin.set(

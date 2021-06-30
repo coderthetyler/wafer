@@ -135,11 +135,11 @@ impl ScenePainter {
         });
         let pos = [pos.x, pos.y, pos.z].into();
         let rot = components.rotation.get(viewer).unwrap_or(&Rotation {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            pitch: 0.0,
+            yaw: 0.0,
+            roll: 0.0,
         });
-        let rot = [rot.x, rot.y, rot.z].into();
+        let rot = [rot.pitch, rot.yaw, rot.roll].into();
         let camera = components.camera.get(viewer).unwrap_or(&Camera {
             fovy: 45.0,
             znear: 0.1,
