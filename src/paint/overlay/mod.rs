@@ -11,7 +11,7 @@ use wgpu_glyph::{
     SectionGeometry, SectionText, Text,
 };
 
-use crate::{app::AppConfig, console::Console, frame::Frame};
+use crate::{app::AppConfig, frame::Frame, types::Console};
 
 /// Responsible for rendering an overlay.
 /// This includes rendering any UI or debugging info.

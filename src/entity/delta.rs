@@ -1,4 +1,4 @@
-use crate::geometry::Rotation;
+use crate::types::Rotation;
 
 use super::{Entity, EntityComponents};
 

@@ -1,41 +1,59 @@
+use core::f32;
+
 use cgmath::{Angle, Deg, InnerSpace, Vector3};
 
 use crate::{
     entity::{Entity, EntityComponents, EntityDelta},
     frame::Frame,
-    geometry::Rotation,
-    payload::Payload,
+    types::{CircularVec, Falloff, Payload, Rotation},
 };
 
-#[derive(Default)]
+use super::Puppet;
+
 pub struct FreeCameraPuppet {
-    mouse_deltas: [(f32, f32); Self::MOUSE_SMOOTH_FRAMES],
+    history: CircularVec<(f32, f32)>,
+    falloff: Falloff,
+}
+
+impl From<FreeCameraPuppet> for Puppet {
+    fn from(puppet: FreeCameraPuppet) -> Self {
+        Puppet::FreeCamera(puppet)
+    }
 }
 
 impl FreeCameraPuppet {
-    const MOUSE_SMOOTH_FRAMES: usize = 4;
+    /// Create a new free camera with inter-frame pan smoothing.
+    /// The number of frames cached is `len`.
+    /// The weight of prior frames is geometrically determined by the `falloff`.
+    pub fn new(len: usize, falloff: Falloff) -> Self {
+        Self {
+            history: CircularVec::with_len(len),
+            falloff,
+        }
+    }
 
-    pub fn calculate_smooth_pan(&self) -> (f32, f32) {
+    fn calculate_smooth_pan(&self) -> (f32, f32) {
         let mut delta = (0.0, 0.0);
         let mut weight = 1.0;
         let mut total_weight = 0.0;
-        for i in 0..Self::MOUSE_SMOOTH_FRAMES {
-            delta.0 += self.mouse_deltas[i].0 * weight;
-            delta.1 += self.mouse_deltas[i].1 * weight;
+        for pan in self.history.iter_rev() {
+            delta.0 += pan.0 * weight;
+            delta.1 += pan.1 * weight;
             total_weight += weight;
-            weight /= 2.0;
+            match self.falloff {
+                Falloff::Geometric(falloff) => weight /= falloff,
+                Falloff::Linear(falloff) => weight = (weight - falloff).max(0.0),
+            }
         }
         (delta.0 / total_weight, delta.1 / total_weight)
     }
 
     pub fn pre_update(&mut self, frame: &Frame) {
-        for i in (1..Self::MOUSE_SMOOTH_FRAMES).rev() {
-            self.mouse_deltas[i] = self.mouse_deltas[i - 1];
-        }
+        self.history.advance();
         if let Some(pan) = frame.input.pan {
-            self.mouse_deltas[0] = pan;
+            self.history.replace(pan);
         } else {
-            self.mouse_deltas[0] = (0.0, 0.0);
+            self.history.replace((0.0, 0.0));
         }
     }
 

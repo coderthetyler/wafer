@@ -2,7 +2,7 @@
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{util::DeviceExt, BindGroupLayout, Device};
 
-use crate::{entity::{Entity, EntityComponents, EntityPool}, geometry::Volume, paint::texture::Texture};
+use crate::{entity::{Entity, EntityComponents, EntityPool}, types::Volume, paint::texture::Texture};
 
 /// All data required to draw collider volumes, if enabled.
 pub struct ColliderPainter {

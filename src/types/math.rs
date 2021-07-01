@@ -1,5 +1,8 @@
 use std::ops::Add;
 
+pub type Spin = Vec3f;
+pub type Velocity = Vec3f;
+
 /// A simple mesh used to detect collisions.
 pub enum Volume {
     Box { x: f32, y: f32, z: f32 },
@@ -104,5 +107,34 @@ impl Add<[f32; 3]> for Vec3f {
             y: self.y + rhs[1],
             z: self.z + rhs[2],
         }
+    }
+}
+
+/// Weight falloff.
+pub enum Falloff {
+    /// Weight is divided each iteration.
+    Geometric(f32),
+    /// Weight is subtracted each iteration.
+    Linear(f32),
+}
+
+/// Aspect ratio of a rectangle.
+pub struct AspectRatio(f32);
+
+impl From<(f32, f32)> for AspectRatio {
+    fn from((width, height): (f32, f32)) -> Self {
+        AspectRatio(width / height)
+    }
+}
+
+impl From<f32> for AspectRatio {
+    fn from(aspect_ratio: f32) -> Self {
+        AspectRatio(aspect_ratio)
+    }
+}
+
+impl From<AspectRatio> for f32 {
+    fn from(aspect_ratio: AspectRatio) -> Self {
+        aspect_ratio.0
     }
 }

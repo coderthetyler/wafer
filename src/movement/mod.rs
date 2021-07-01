@@ -1,11 +1,7 @@
 use crate::{
     entity::{EntityComponents, EntityPool},
     frame::Frame,
-    geometry::Vec3f,
 };
-
-pub type Spin = Vec3f;
-pub type Velocity = Vec3f;
 
 pub struct MovementSystem {}
 

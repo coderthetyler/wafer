@@ -7,16 +7,15 @@ use winit::{
 use crate::{
     action::{Action, ActionType, ConfigAction},
     camera::Camera,
-    console::Console,
     entity::{EntityComponents, EntityPool},
-    geometry::{Position, Rotation, Volume},
+    frame::Frame,
     input::{scene::SceneInputContext, EventAction},
-    movement::{MovementSystem, Spin, Velocity},
+    movement::MovementSystem,
     paint::PaintSystem,
     puppet::{Puppet, PuppetSystem},
-    frame::Frame,
+    types::{Console, Falloff, Position, Rotation, Spin, Velocity, Volume},
 };
-use crate::{input::EventInterpreter, puppet::camera::FreeCameraPuppet};
+use crate::{input::EventInterpreter, puppet::FreeCameraPuppet};
 
 #[derive(Default)]
 pub struct AppConfig {
@@ -79,9 +78,10 @@ impl Application {
                 roll: 0.0,
             },
         );
-        app.components
-            .puppet
-            .set(player, Puppet::FreeCamera(FreeCameraPuppet::default()));
+        app.components.puppet.set(
+            player,
+            Puppet::FreeCamera(FreeCameraPuppet::new(10, Falloff::Geometric(1.8))),
+        );
         app.paint_system.active_camera = player;
 
         let cube_friend_0 = app.entities.allocate();

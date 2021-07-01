@@ -1,12 +1,12 @@
+mod camera;
+
 use crate::{
     entity::{Entity, EntityComponents, EntityDelta, EntityPool},
     frame::Frame,
-    payload::Payload,
+    types::Payload,
 };
 
-use self::camera::FreeCameraPuppet;
-
-pub mod camera;
+pub use self::camera::FreeCameraPuppet;
 
 /// A puppet describes the high-level faculties for piloting an entity.
 /// It does not provide any "mind" that calls those faculties.

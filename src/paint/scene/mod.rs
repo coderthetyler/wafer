@@ -7,9 +7,9 @@ use wgpu::{
 
 use crate::{
     app::AppConfig,
-    camera::{AspectRatio, Camera},
+    camera::Camera,
     entity::{Entity, EntityComponents, EntityPool},
-    geometry::{Position, Rotation},
+    types::{AspectRatio, Position, Rotation},
 };
 
 use self::{colliders::ColliderPainter, voxels::VoxelPainter};

@@ -8,7 +8,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 use crate::{
     app::AppConfig,
     camera::Camera,
-    console::Console,
+    types::Console,
     entity::{Entity, EntityComponents, EntityPool},
     frame::Frame,
 };

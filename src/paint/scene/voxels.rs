@@ -5,12 +5,12 @@ use wgpu::{
 };
 
 use crate::{
-    geometry::Vec3f,
     paint::texture::Texture,
     planets::{
         chunk::{Chunk, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z},
         voxel::Voxel,
     },
+    types::Vec3f,
 };
 
 /// Responsible for drawing terrain voxels.

@@ -1,14 +1,13 @@
+mod delta;
+
 use crate::{
     camera::Camera,
-    generation::{GenerationalIndex, GenerationalIndexPool, GenerationalIndexVec},
-    geometry::{Position, Rotation, Volume},
-    movement::{Spin, Velocity},
     puppet::Puppet,
+    types::{GenerationalIndex, GenerationalIndexPool, GenerationalIndexVec},
+    types::{Position, Rotation, Spin, Velocity, Volume},
 };
 
 pub use delta::EntityDelta;
-
-mod delta;
 
 pub type Entity = GenerationalIndex;
 pub type EntityPool = GenerationalIndexPool;

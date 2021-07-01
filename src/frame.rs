@@ -1,6 +1,6 @@
 use crate::{
     input::scene::SceneInputState,
-    time::{Seconds, Timestamp},
+    types::{Seconds, Timestamp},
 };
 
 /// Queryable information about a single frame.
