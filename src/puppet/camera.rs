@@ -40,10 +40,7 @@ impl FreeCameraPuppet {
             delta.0 += pan.0 * weight;
             delta.1 += pan.1 * weight;
             total_weight += weight;
-            match self.falloff {
-                Falloff::Geometric(falloff) => weight /= falloff,
-                Falloff::Linear(falloff) => weight = (weight - falloff).max(0.0),
-            }
+            weight = self.falloff.apply(weight);
         }
         (delta.0 / total_weight, delta.1 / total_weight)
     }

@@ -9,7 +9,7 @@ use crate::{
     camera::Camera,
     entity::{EntityComponents, EntityPool},
     frame::Frame,
-    input::{scene::SceneInputContext, EventAction},
+    input::{EventAction, SceneInputContext},
     movement::MovementSystem,
     paint::PaintSystem,
     puppet::{Puppet, PuppetSystem},
@@ -57,7 +57,7 @@ impl Application {
             puppet_system: PuppetSystem::new(),
 
             interpreter: EventInterpreter::new(),
-            frame: Frame::new(),
+            frame: Frame::new(60, Falloff::Geometric(1.1)),
         };
 
         let player = app.entities.allocate();

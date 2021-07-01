@@ -1,6 +1,6 @@
 use ascii::AsciiChar;
 
-use crate::{app::Application, input::console::ConsoleInputContext};
+use crate::{app::Application, input::ConsoleInputContext};
 
 use super::{Action, ActionType};
 

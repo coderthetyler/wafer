@@ -118,6 +118,15 @@ pub enum Falloff {
     Linear(f32),
 }
 
+impl Falloff {
+    pub fn apply(&self, weight: f32) -> f32 {
+        match self {
+            Falloff::Geometric(falloff) => weight / falloff,
+            Falloff::Linear(falloff) => (weight - falloff).max(0.0),
+        }
+    }
+}
+
 /// Aspect ratio of a rectangle.
 pub struct AspectRatio(f32);
 

@@ -53,8 +53,6 @@ impl PuppetSystem {
             if let Some(puppet) = components.puppet.get_mut(entity) {
                 puppet.pre_update(frame);
             }
-        }
-        for entity in entities.iter() {
             if let Some(puppet) = components.puppet.get(entity) {
                 puppet
                     .gen_deltas(frame, entity, components)

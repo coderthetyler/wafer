@@ -1,6 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct Seconds(pub f32);
 
 impl Seconds {

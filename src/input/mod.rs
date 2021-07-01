@@ -2,11 +2,12 @@ use winit::{event::Event, window::WindowId};
 
 use crate::action::{Action, ConsoleAction, SceneAction};
 
-use self::console::ConsoleInputContext;
-use self::scene::SceneInputContext;
+pub use self::console::ConsoleInputContext;
+pub use self::scene::SceneInputContext;
+pub use self::scene::SceneInputState;
 
-pub mod console;
-pub mod scene;
+mod console;
+mod scene;
 
 pub struct EventInterpreter {
     context_stack: Vec<InputContext>,

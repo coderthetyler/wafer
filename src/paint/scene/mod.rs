@@ -1,3 +1,6 @@
+mod colliders;
+mod voxels;
+
 use cgmath::{Deg, Vector3};
 use wgpu::{
     util::DeviceExt, Color, CommandBuffer, CommandEncoderDescriptor, Device, LoadOp, Operations,
@@ -15,9 +18,6 @@ use crate::{
 use self::{colliders::ColliderPainter, voxels::VoxelPainter};
 
 use super::{texture::Texture, PaintContext};
-
-mod colliders;
-mod voxels;
 
 /// Represents world uniforms common to all world painters.
 /// For example, this includes the view projection matrix.
@@ -167,9 +167,9 @@ impl ScenePainter {
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Clear(Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.4,
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
                             a: 1.0,
                         }),
                         store: true,

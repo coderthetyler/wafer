@@ -1,6 +1,6 @@
 use crate::{
-    input::scene::SceneInputState,
-    types::{Seconds, Timestamp},
+    input::SceneInputState,
+    types::{CircularVec, Falloff, Seconds, Timestamp},
 };
 
 /// Queryable information about a single frame.
@@ -16,22 +16,20 @@ pub struct Frame {
     /// Queryable input state.
     pub input: SceneInputState,
     /// Circular buffer of prior frame deltas used to compute a smoothed framerate.
-    prior_deltas: [Seconds; Self::SMOOTH_COUNT],
-    /// Start index into `framerate_buffer`
-    buffer_head: usize,
+    deltas: CircularVec<Seconds>,
+    /// Weight falloff function used to smooth framerate calculation.
+    falloff: Falloff,
 }
 
 impl Frame {
-    const SMOOTH_COUNT: usize = 8;
-
-    pub fn new() -> Self {
+    pub fn new(len: usize, falloff: Falloff) -> Self {
         Self {
             framerate: 0.0,
             delta: Seconds(0.0),
             instant: Timestamp::now(),
             input: SceneInputState::default(),
-            prior_deltas: [Seconds(0.0); Frame::SMOOTH_COUNT],
-            buffer_head: 0,
+            deltas: CircularVec::with_len(len),
+            falloff,
         }
     }
 
@@ -45,17 +43,16 @@ impl Frame {
         self.instant = Timestamp::now();
         self.delta = self.instant.delta(prior_instant);
 
-        self.buffer_head = (self.buffer_head + 1) % Frame::SMOOTH_COUNT;
-        self.prior_deltas[self.buffer_head] = self.delta;
+        self.deltas.advance();
+        self.deltas.replace(self.delta);
 
         let mut weighted_delta = 0.0;
         let mut weight = 1.0;
         let mut total_weight = 0.0;
-        for i in 0..Frame::SMOOTH_COUNT {
-            let index = (Frame::SMOOTH_COUNT + self.buffer_head - i) % Frame::SMOOTH_COUNT;
-            weighted_delta += self.prior_deltas[index].0 * weight;
+        for delta in self.deltas.iter_rev() {
+            weighted_delta += delta.as_f32() * weight;
             total_weight += weight;
-            weight /= 2.0;
+            weight = self.falloff.apply(weight);
         }
         weighted_delta /= total_weight;
         self.framerate = 1.0 / weighted_delta;
