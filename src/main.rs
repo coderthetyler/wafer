@@ -12,6 +12,7 @@ mod frame;
 mod input;
 mod movement;
 mod paint;
+mod physics;
 mod planets;
 mod puppet;
 mod types;

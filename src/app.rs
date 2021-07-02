@@ -12,6 +12,7 @@ use crate::{
     input::{EventAction, SceneInputContext},
     movement::MovementSystem,
     paint::PaintSystem,
+    physics::PhysicsSystem,
     puppet::{Puppet, PuppetSystem},
     types::{Console, Falloff, Position, Rotation, Spin, Velocity, Volume},
 };
@@ -35,6 +36,7 @@ pub struct Application {
     pub paint_system: PaintSystem,
     pub movement_system: MovementSystem,
     pub puppet_system: PuppetSystem,
+    pub physics_system: PhysicsSystem,
 
     pub interpreter: EventInterpreter,
 
@@ -42,6 +44,90 @@ pub struct Application {
 }
 
 impl Application {
+    fn redraw(&mut self) {
+        self.frame.start();
+        self.paint_system.redraw(
+            &self.config,
+            &self.frame,
+            &self.console,
+            &self.entities,
+            &self.components,
+        );
+        self.physics_system
+            .update(&self.frame, &self.entities, &mut self.components);
+        self.movement_system
+            .update(&self.frame, &self.entities, &mut self.components);
+        self.puppet_system
+            .update(&self.frame, &self.entities, &mut self.components);
+        self.frame.end();
+    }
+
+    pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
+        let action = self.process_app_event(event);
+        match action {
+            EventAction::Unconsumed => {
+                if let EventAction::React(action) =
+                    self.interpreter.consume(&self.window.id(), event)
+                {
+                    action.perform(self);
+                };
+            }
+            EventAction::Consumed => {
+                // Nothing to do if event was consumed without producing an action
+            }
+            EventAction::React(action) => {
+                action.perform(self);
+            }
+        }
+        if self.config.should_exit {
+            *control_flow = ControlFlow::Exit;
+        }
+    }
+
+    /// Process all top-level events that drive basic application behavior.
+    /// This includes window resizing and redraw requests, for example.
+    fn process_app_event(&mut self, event: &Event<()>) -> EventAction {
+        match event {
+            Event::MainEventsCleared => {
+                self.window.request_redraw();
+                return EventAction::Consumed;
+            }
+            Event::RedrawRequested(window_id) if *window_id == self.window.id() => {
+                self.redraw();
+                return EventAction::Consumed;
+            }
+            Event::WindowEvent {
+                window_id,
+                ref event,
+            } if self.window.id() == *window_id => match event {
+                WindowEvent::CloseRequested => {
+                    self.config.should_exit = true;
+                    return EventAction::Consumed;
+                }
+                WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                    self.paint_system.resize_surface(new_inner_size);
+                    return EventAction::Consumed;
+                }
+                WindowEvent::Resized(ref new_size) => {
+                    self.paint_system.resize_surface(new_size);
+                    return EventAction::Consumed;
+                }
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if let (Some(VirtualKeyCode::Tab), ElementState::Pressed) =
+                        (input.virtual_keycode, input.state)
+                    {
+                        return EventAction::React(Action::Config(
+                            ConfigAction::ToggleDebugOverlay,
+                        ));
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+        EventAction::Unconsumed
+    }
+
     pub async fn new(window: Window) -> Self {
         let paint_system = PaintSystem::new(&window).await;
         let mut app = Application {
@@ -55,6 +141,7 @@ impl Application {
             paint_system,
             movement_system: MovementSystem::new(),
             puppet_system: PuppetSystem::new(),
+            physics_system: PhysicsSystem::new(),
 
             interpreter: EventInterpreter::new(),
             frame: Frame::new(60, Falloff::Geometric(1.1)),
@@ -157,87 +244,5 @@ impl Application {
         }
 
         app
-    }
-
-    pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
-        let action = self.process_app_event(event);
-        match action {
-            EventAction::Unconsumed => {
-                if let EventAction::React(action) =
-                    self.interpreter.consume(&self.window.id(), event)
-                {
-                    action.perform(self);
-                };
-            }
-            EventAction::Consumed => {
-                // Nothing to do if event was consumed without producing an action
-            }
-            EventAction::React(action) => {
-                action.perform(self);
-            }
-        }
-        if self.config.should_exit {
-            *control_flow = ControlFlow::Exit;
-        }
-    }
-
-    /// Process all top-level events that drive basic application behavior.
-    /// This includes window resizing and redraw requests, for example.
-    fn process_app_event(&mut self, event: &Event<()>) -> EventAction {
-        match event {
-            Event::MainEventsCleared => {
-                self.window.request_redraw();
-                return EventAction::Consumed;
-            }
-            Event::RedrawRequested(window_id) if *window_id == self.window.id() => {
-                self.redraw();
-                return EventAction::Consumed;
-            }
-            Event::WindowEvent {
-                window_id,
-                ref event,
-            } if self.window.id() == *window_id => match event {
-                WindowEvent::CloseRequested => {
-                    self.config.should_exit = true;
-                    return EventAction::Consumed;
-                }
-                WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    self.paint_system.resize_surface(new_inner_size);
-                    return EventAction::Consumed;
-                }
-                WindowEvent::Resized(ref new_size) => {
-                    self.paint_system.resize_surface(new_size);
-                    return EventAction::Consumed;
-                }
-                WindowEvent::KeyboardInput { input, .. } => {
-                    if let (Some(VirtualKeyCode::Tab), ElementState::Pressed) =
-                        (input.virtual_keycode, input.state)
-                    {
-                        return EventAction::React(Action::Config(
-                            ConfigAction::ToggleDebugOverlay,
-                        ));
-                    }
-                }
-                _ => {}
-            },
-            _ => {}
-        }
-        EventAction::Unconsumed
-    }
-
-    fn redraw(&mut self) {
-        self.frame.start();
-        self.paint_system.redraw(
-            &self.config,
-            &self.frame,
-            &self.console,
-            &self.entities,
-            &self.components,
-        );
-        self.movement_system
-            .update(&self.frame, &self.entities, &mut self.components);
-        self.puppet_system
-            .update(&self.frame, &mut self.entities, &mut self.components);
-        self.frame.end();
     }
 }

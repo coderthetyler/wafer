@@ -43,12 +43,7 @@ impl PuppetSystem {
         Self {}
     }
 
-    pub fn update(
-        &self,
-        frame: &Frame,
-        entities: &mut EntityPool,
-        components: &mut EntityComponents,
-    ) {
+    pub fn update(&self, frame: &Frame, entities: &EntityPool, components: &mut EntityComponents) {
         for entity in entities.iter() {
             if let Some(puppet) = components.puppet.get_mut(entity) {
                 puppet.pre_update(frame);
