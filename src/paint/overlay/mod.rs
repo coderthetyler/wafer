@@ -11,17 +11,18 @@ use wgpu_glyph::{
     SectionGeometry, SectionText, Text,
 };
 
-use crate::{console::Console, time::Frame};
+use crate::{app::AppConfig, frame::Frame, types::Console};
 
-pub struct OverlaySubsystem {
+/// Responsible for rendering an overlay.
+/// This includes rendering any UI or debugging info.
+pub struct OverlayPainter {
     glyph_brush: GlyphBrush<()>,
     staging_belt: StagingBelt,
     local_pool: LocalPool,
     local_spawner: LocalSpawner,
-    pub show_debug_overlay: bool,
 }
 
-impl OverlaySubsystem {
+impl OverlayPainter {
     pub fn new(device: &wgpu::Device) -> Self {
         // Stuff for text rendering
         let staging_belt = StagingBelt::new(1024);
@@ -35,7 +36,6 @@ impl OverlaySubsystem {
             staging_belt,
             local_pool,
             local_spawner,
-            show_debug_overlay: true,
         }
     }
 
@@ -48,6 +48,7 @@ impl OverlaySubsystem {
 
     pub fn draw(
         &mut self,
+        config: &AppConfig,
         frame: &Frame,
         device: &Device,
         color_target: &TextureView,
@@ -67,7 +68,7 @@ impl OverlaySubsystem {
                 (10.0, bounds.1 as f32 - 50.0),
             );
         }
-        if self.show_debug_overlay {
+        if !config.hide_debug_overlay {
             self.draw_text(
                 device,
                 color_target,
@@ -75,7 +76,7 @@ impl OverlaySubsystem {
                 &mut encoder,
                 format!(
                     "fps: {}\nfaces: {}",
-                    frame.framerate.round() as u32,
+                    (frame.framerate * 10.0).round() / 10.0,
                     triangle_count
                 )
                 .as_str(),
@@ -130,7 +131,7 @@ impl OverlaySubsystem {
         position: (f32, f32),
     ) {
         let prompt_text = Text::new(text)
-            .with_color([0.0, 0.0, 0.0, 1.0])
+            .with_color([1.0, 1.0, 1.0, 1.0])
             .with_scale(35.0);
         let prompt_section = Section::default()
             .with_screen_position(position)

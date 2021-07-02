@@ -1,11 +1,13 @@
 use super::Application;
 
-pub use self::app::AppAction;
+pub use self::app::ConfigAction;
 pub use self::console::ConsoleAction;
+pub use self::scene::SceneAction;
 pub use self::window::WindowAction;
 
 mod app;
 mod console;
+mod scene;
 mod window;
 
 pub trait ActionType {
@@ -13,25 +15,30 @@ pub trait ActionType {
 }
 
 pub enum Action {
+    /// An action scoped to the application state.
+    Config(ConfigAction),
     /// An action scoped to the console.
     Console(ConsoleAction),
+    /// An action scoped to the scene.
+    Scene(SceneAction),
     /// An action scoped to the window.
     Window(WindowAction),
-    /// An action scope to the application.
-    App(AppAction),
 }
 
 impl ActionType for Action {
     /// Perform & consume the action.
     fn perform(self, app: &mut Application) {
         match self {
+            Action::Config(action) => {
+                action.perform(app);
+            }
             Action::Console(action) => {
                 action.perform(app);
             }
-            Action::Window(action) => {
+            Action::Scene(action) => {
                 action.perform(app);
             }
-            Action::App(action) => {
+            Action::Window(action) => {
                 action.perform(app);
             }
         }

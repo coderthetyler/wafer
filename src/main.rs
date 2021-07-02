@@ -7,14 +7,15 @@ use winit::{
 mod action;
 mod app;
 mod camera;
-mod console;
-mod draw;
 mod entity;
-mod generation;
-mod geometry;
+mod frame;
 mod input;
+mod movement;
+mod paint;
+mod physics;
 mod planets;
-mod time;
+mod puppet;
+mod types;
 
 fn main() {
     let event_loop = EventLoop::new();

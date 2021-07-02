@@ -5,54 +5,61 @@ use winit::{
 };
 
 use crate::{
-    action::{Action, ActionType, AppAction},
+    action::{Action, ActionType, ConfigAction},
     camera::Camera,
-    console::Console,
-    draw::DrawSystem,
-    entity::EntitySystem,
-    input::{CameraInputContext, EventAction, InputSystem},
-    time::Frame,
+    entity::{EntityComponents, EntityPool},
+    frame::Frame,
+    input::{EventAction, SceneInputContext},
+    movement::MovementSystem,
+    paint::PaintSystem,
+    physics::PhysicsSystem,
+    puppet::{Puppet, PuppetSystem},
+    types::{Console, Falloff, Position, Rotation, Spin, Velocity, Volume},
 };
+use crate::{input::EventInterpreter, puppet::FreeCameraPuppet};
+
+#[derive(Default)]
+pub struct AppConfig {
+    pub hide_debug_overlay: bool,
+    pub show_collider_volumes: bool,
+    pub should_exit: bool,
+}
 
 pub struct Application {
+    pub config: AppConfig,
     pub window: Window,
     pub console: Console,
-    pub draw_system: DrawSystem,
-    pub entity_system: EntitySystem,
-    pub input_system: InputSystem,
-    pub close_requested: bool,
-    fallback_camera: Camera,
-    frame: Frame,
+
+    pub entities: EntityPool,
+    pub components: EntityComponents,
+
+    pub paint_system: PaintSystem,
+    pub movement_system: MovementSystem,
+    pub puppet_system: PuppetSystem,
+    pub physics_system: PhysicsSystem,
+
+    pub interpreter: EventInterpreter,
+
+    pub frame: Frame,
 }
 
 impl Application {
-    pub async fn new(window: Window) -> Self {
-        let draw_system = DrawSystem::new(&window).await;
-        let mut app = Application {
-            window,
-            console: Console::new(),
-            draw_system,
-            entity_system: EntitySystem::new(),
-            input_system: InputSystem::new(),
-            fallback_camera: Camera::new(10.0, 0.1),
-            close_requested: false,
-            frame: Frame::new(),
-        };
-
-        let player_camera = app.entity_system.create();
-        app.entity_system
-            .cameras
-            .set(player_camera, Camera::new(20.0, 0.1));
-        app.entity_system.selected_camera = player_camera;
-
-        if let Some(action) = app
-            .input_system
-            .push_context(CameraInputContext::new(player_camera).into())
-        {
-            action.perform(&mut app);
-        }
-
-        app
+    fn redraw(&mut self) {
+        self.frame.start();
+        self.paint_system.redraw(
+            &self.config,
+            &self.frame,
+            &self.console,
+            &self.entities,
+            &self.components,
+        );
+        self.physics_system
+            .update(&self.frame, &self.entities, &mut self.components);
+        self.movement_system
+            .update(&self.frame, &self.entities, &mut self.components);
+        self.puppet_system
+            .update(&self.frame, &self.entities, &mut self.components);
+        self.frame.end();
     }
 
     pub fn receive_event(&mut self, event: &Event<()>, control_flow: &mut ControlFlow) {
@@ -60,7 +67,7 @@ impl Application {
         match action {
             EventAction::Unconsumed => {
                 if let EventAction::React(action) =
-                    self.input_system.receive_event(&self.window.id(), event)
+                    self.interpreter.consume(&self.window.id(), event)
                 {
                     action.perform(self);
                 };
@@ -72,7 +79,7 @@ impl Application {
                 action.perform(self);
             }
         }
-        if self.close_requested {
+        if self.config.should_exit {
             *control_flow = ControlFlow::Exit;
         }
     }
@@ -94,22 +101,24 @@ impl Application {
                 ref event,
             } if self.window.id() == *window_id => match event {
                 WindowEvent::CloseRequested => {
-                    self.close_requested = true;
+                    self.config.should_exit = true;
                     return EventAction::Consumed;
                 }
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    self.draw_system.resize_surface(new_inner_size);
+                    self.paint_system.resize_surface(new_inner_size);
                     return EventAction::Consumed;
                 }
                 WindowEvent::Resized(ref new_size) => {
-                    self.draw_system.resize_surface(new_size);
+                    self.paint_system.resize_surface(new_size);
                     return EventAction::Consumed;
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let (Some(VirtualKeyCode::Tab), ElementState::Pressed) =
                         (input.virtual_keycode, input.state)
                     {
-                        return EventAction::React(Action::App(AppAction::ToggleDebugOverlay));
+                        return EventAction::React(Action::Config(
+                            ConfigAction::ToggleDebugOverlay,
+                        ));
                     }
                 }
                 _ => {}
@@ -119,14 +128,121 @@ impl Application {
         EventAction::Unconsumed
     }
 
-    fn redraw(&mut self) {
-        self.frame.record();
-        self.input_system
-            .update(&self.frame, &mut self.entity_system);
-        let camera = self
-            .entity_system
-            .get_selected_camera()
-            .unwrap_or(&self.fallback_camera);
-        self.draw_system.redraw(&self.frame, camera, &self.console);
+    pub async fn new(window: Window) -> Self {
+        let paint_system = PaintSystem::new(&window).await;
+        let mut app = Application {
+            config: AppConfig::default(),
+            window,
+            console: Console::new(),
+
+            entities: EntityPool::new(),
+            components: EntityComponents::new(),
+
+            paint_system,
+            movement_system: MovementSystem::new(),
+            puppet_system: PuppetSystem::new(),
+            physics_system: PhysicsSystem::new(),
+
+            interpreter: EventInterpreter::new(),
+            frame: Frame::new(60, Falloff::Geometric(1.1)),
+        };
+
+        let player = app.entities.allocate();
+        app.components.camera.set(player, Camera::new());
+        app.components.position.set(
+            player,
+            Position {
+                x: 0.0,
+                y: 0.0,
+                z: 32.0,
+            },
+        );
+        app.components.rotation.set(
+            player,
+            Rotation {
+                pitch: 0.0,
+                yaw: 180.0,
+                roll: 0.0,
+            },
+        );
+        app.components.puppet.set(
+            player,
+            Puppet::FreeCamera(FreeCameraPuppet::new(10, Falloff::Geometric(1.8))),
+        );
+        app.paint_system.active_camera = player;
+
+        let cube_friend_0 = app.entities.allocate();
+        app.components.velocity.set(
+            cube_friend_0,
+            Velocity {
+                x: 0.2,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        app.components.position.set(
+            cube_friend_0,
+            Position {
+                x: 0.0,
+                y: 20.0,
+                z: 0.0,
+            },
+        );
+        app.components.colliders.set(
+            cube_friend_0,
+            Volume::Box {
+                x: 0.75,
+                y: 0.75,
+                z: 0.75,
+            },
+        );
+        app.components.rotation.set(
+            cube_friend_0,
+            Rotation {
+                pitch: 45.0,
+                yaw: 45.0,
+                roll: 45.0,
+            },
+        );
+        app.components.spin.set(
+            cube_friend_0,
+            Spin {
+                x: 2.0,
+                y: 4.5,
+                z: 6.5,
+            },
+        );
+
+        let cube_friend_1 = app.entities.allocate();
+        app.components.velocity.set(
+            cube_friend_1,
+            Velocity {
+                x: -0.1,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        app.components.position.set(
+            cube_friend_1,
+            Position {
+                x: 8.0,
+                y: 18.0,
+                z: 0.0,
+            },
+        );
+        app.components.colliders.set(
+            cube_friend_1,
+            Volume::Box {
+                x: 0.75,
+                y: 0.50,
+                z: 0.75,
+            },
+        );
+
+        if let Some(action) = app.interpreter.push_context(SceneInputContext::new()) {
+            action.perform(&mut app);
+        }
+
+        app
     }
 }

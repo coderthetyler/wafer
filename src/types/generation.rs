@@ -29,7 +29,7 @@ struct AllocatorEntry {
 }
 
 pub struct GenerationalIndexIter<'allocator> {
-    allocator: &'allocator GenerationalIndexAllocator,
+    allocator: &'allocator GenerationalIndexPool,
     index: usize,
 }
 
@@ -55,12 +55,12 @@ impl<'allocator> Iterator for GenerationalIndexIter<'allocator> {
 }
 
 /// Allocates & deallocates generational indices.
-pub struct GenerationalIndexAllocator {
+pub struct GenerationalIndexPool {
     entries: Vec<AllocatorEntry>,
     free: Vec<usize>,
 }
 
-impl GenerationalIndexAllocator {
+impl GenerationalIndexPool {
     pub fn new() -> Self {
         Self {
             entries: vec![],
@@ -254,7 +254,7 @@ mod tests {
 
     #[test]
     fn allocate_index() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         let index0gen1 = allocator.allocate();
         assert_eq!(index0gen1.index, 0);
         assert_eq!(index0gen1.generation, 1);
@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn not_is_live_after_deallocation() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         let index0gen1 = allocator.allocate();
         assert_eq!(allocator.is_live(index0gen1), true);
         assert_eq!(allocator.deallocate(index0gen1), true);
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn is_live_after_reallocation() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         let index0gen1 = allocator.allocate();
         allocator.deallocate(index0gen1);
         let index0gen2 = allocator.allocate();
@@ -281,7 +281,7 @@ mod tests {
 
     #[test]
     fn deallocate_twice_returns_false() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         let index0gen1 = allocator.allocate();
         assert_eq!(allocator.deallocate(index0gen1), true);
         assert_eq!(allocator.deallocate(index0gen1), false);
@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn reallocate_reuses_old_index() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         let index0gen1 = allocator.allocate();
         allocator.deallocate(index0gen1);
         let index0gen2 = allocator.allocate();
@@ -299,7 +299,7 @@ mod tests {
 
     #[test]
     fn just_do_alot_of_allocations() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         for i in 0..10 {
             let index = allocator.allocate();
             assert_eq!(index.index, i);
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn iter_includes_allocated_indices() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         let index0gen1 = allocator.allocate();
         let index1gen1 = allocator.allocate();
         let index2gen1 = allocator.allocate();
@@ -322,7 +322,7 @@ mod tests {
 
     #[test]
     fn iter_excludes_deallocated_indices() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         let index0gen1 = allocator.allocate();
         let index1gen1 = allocator.allocate();
         let index2gen1 = allocator.allocate();
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn iter_includes_correct_generation() {
-        let mut allocator = GenerationalIndexAllocator::new();
+        let mut allocator = GenerationalIndexPool::new();
         let index0gen1 = allocator.allocate();
         let index1gen1 = allocator.allocate();
         allocator.deallocate(index1gen1);

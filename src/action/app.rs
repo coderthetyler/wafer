@@ -2,28 +2,33 @@ use crate::app::Application;
 
 use super::{Action, ActionType};
 
-pub enum AppAction {
+pub enum ConfigAction {
+    /// Show & hide collider volume wireframes.
+    ToglePaintColliderVolumes,
     /// Show & hide the debugging overlay.
     ToggleDebugOverlay,
     /// Exit the application.
     RequestClose,
 }
 
-impl ActionType for AppAction {
+impl ActionType for ConfigAction {
     fn perform(self, app: &mut Application) {
         match self {
-            AppAction::RequestClose => {
-                app.close_requested = true;
+            ConfigAction::RequestClose => {
+                app.config.should_exit = true;
             }
-            AppAction::ToggleDebugOverlay => {
-                app.draw_system.overlay_ss.show_debug_overlay ^= true;
+            ConfigAction::ToggleDebugOverlay => {
+                app.config.hide_debug_overlay ^= true;
+            }
+            ConfigAction::ToglePaintColliderVolumes => {
+                app.config.show_collider_volumes ^= true;
             }
         }
     }
 }
 
-impl From<AppAction> for Action {
-    fn from(action: AppAction) -> Self {
-        Action::App(action)
+impl From<ConfigAction> for Action {
+    fn from(action: ConfigAction) -> Self {
+        Action::Config(action)
     }
 }

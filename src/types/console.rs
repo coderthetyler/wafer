@@ -1,6 +1,6 @@
 use ascii::{AsciiChar, AsciiString};
 
-use crate::action::{Action, AppAction};
+use crate::action::{Action, ConfigAction};
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 struct CursorPosition(usize);
@@ -93,7 +93,9 @@ impl Console {
         } else {
             let mut action = None;
             if self.text == "exit" {
-                action = Some(Action::App(AppAction::RequestClose));
+                action = Some(Action::Config(ConfigAction::RequestClose));
+            } else if self.text == "wires" {
+                action = Some(Action::Config(ConfigAction::ToglePaintColliderVolumes));
             }
             self.backwards.push(self.text.clone());
             self.forwards.clear();
@@ -127,9 +129,6 @@ impl Console {
         }
     }
 }
-
-#[derive(PartialEq, Debug)]
-pub enum ConsoleCommand {}
 
 #[cfg(test)]
 mod test {

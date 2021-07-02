@@ -1,73 +1,39 @@
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BufferUsage, Color, CommandBuffer, CommandEncoderDescriptor, Device, LoadOp, Operations, Queue,
-    RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor,
-    RenderPipeline, ShaderFlags, ShaderModuleDescriptor, ShaderSource, SwapChainDescriptor,
-    TextureView,
+    BindGroupLayout, BufferUsage, Device, RenderPipeline, ShaderFlags, ShaderModuleDescriptor,
+    ShaderSource, SwapChainDescriptor,
 };
 
 use crate::{
-    camera::Camera,
-    geometry::Vec3f,
+    paint::texture::Texture,
     planets::{
         chunk::{Chunk, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z},
         voxel::Voxel,
     },
+    types::Vec3f,
 };
 
-use super::texture::Texture;
-
-pub struct VoxelSubsystem {
-    pipeline: RenderPipeline,
-    depth_texture: Texture,
-    mesh_buffers: Vec<IndexedVertexBuffer>,
-    uniforms: Uniforms,
-    uniform_buffer: wgpu::Buffer,
-    uniform_group: wgpu::BindGroup,
-    pub triangle_count: usize,
+/// Responsible for drawing terrain voxels.
+pub struct VoxelPainter {
+    pub pipeline: RenderPipeline,
+    pub mesh_buffers: Vec<IndexedVertexBuffer>,
 }
 
-impl VoxelSubsystem {
-    pub fn new(device: &Device, swapchain_desc: &SwapChainDescriptor) -> Self {
+impl VoxelPainter {
+    pub fn new(
+        device: &Device,
+        swapchain_desc: &SwapChainDescriptor,
+        world_uniforms_layout: &BindGroupLayout,
+    ) -> Self {
         let mut chunk = Chunk::new([0, 0, 0].into());
         chunk.randomize();
         let chunk_mesh = chunk.build_mesh();
-        let triangle_count = chunk_mesh.indices.len() / 3;
         let mesh_buffers = vec![IndexedVertexBuffer::new(&device, chunk_mesh)];
         let vertex_layout = wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<VoxelVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
-        let uniforms = Uniforms::new();
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&[uniforms]),
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        });
-        let uniform_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: None,
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
-        let uniform_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &uniform_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            }],
-        });
-        let depth_texture = Texture::new_depth_texture(device, &swapchain_desc);
         let shader = device.create_shader_module(&ShaderModuleDescriptor {
             label: None,
             flags: ShaderFlags::all(),
@@ -75,7 +41,7 @@ impl VoxelSubsystem {
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[&uniform_group_layout],
+            bind_group_layouts: &[world_uniforms_layout],
             push_constant_ranges: &[],
         });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -115,76 +81,12 @@ impl VoxelSubsystem {
         });
         Self {
             pipeline,
-            depth_texture,
             mesh_buffers,
-            uniforms,
-            uniform_buffer,
-            uniform_group,
-            triangle_count,
         }
-    }
-
-    pub fn update_swapchain(&mut self, device: &Device, swapchain_desc: &SwapChainDescriptor) {
-        self.depth_texture = Texture::new_depth_texture(device, swapchain_desc);
-    }
-
-    pub fn draw(
-        &mut self,
-        device: &Device,
-        queue: &Queue,
-        color_target: &TextureView,
-        (width, height): (u32, u32),
-        camera: &Camera,
-    ) -> CommandBuffer {
-        self.uniforms.view_proj = camera
-            .build_view_projection_matrix((width as f32, height as f32).into())
-            .into();
-        queue.write_buffer(
-            &self.uniform_buffer,
-            0,
-            bytemuck::cast_slice(&[self.uniforms]),
-        );
-
-        let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor::default());
-        {
-            let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-                label: None,
-                color_attachments: &[RenderPassColorAttachment {
-                    view: color_target,
-                    resolve_target: None,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.4,
-                            a: 1.0,
-                        }),
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
-                    view: &self.depth_texture.view,
-                    depth_ops: Some(Operations {
-                        load: LoadOp::Clear(1.0),
-                        store: true,
-                    }),
-                    stencil_ops: None,
-                }),
-            });
-
-            render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_bind_group(0, &self.uniform_group, &[]);
-            for buf in &self.mesh_buffers {
-                render_pass.set_vertex_buffer(0, buf.vertices.slice(..));
-                render_pass.set_index_buffer(buf.indices.slice(..), wgpu::IndexFormat::Uint32);
-                render_pass.draw_indexed(0..buf.index_count, 0, 0..1);
-            }
-        }
-        encoder.finish()
     }
 }
 
-struct IndexedVertexBuffer {
+pub struct IndexedVertexBuffer {
     pub vertices: wgpu::Buffer,
     pub indices: wgpu::Buffer,
     pub index_count: u32,
@@ -207,25 +109,6 @@ impl IndexedVertexBuffer {
             vertices,
             indices,
             index_count,
-        }
-    }
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct Uniforms {
-    view_proj: [[f32; 4]; 4],
-}
-
-impl Uniforms {
-    fn new() -> Self {
-        Self {
-            view_proj: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
         }
     }
 }

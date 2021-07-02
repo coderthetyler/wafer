@@ -1,20 +1,19 @@
 use winit::{event::Event, window::WindowId};
 
-use crate::action::Action;
-use crate::entity::EntitySystem;
-use crate::time::Frame;
+use crate::action::{Action, ConsoleAction, SceneAction};
 
-pub use self::camera::CameraInputContext;
 pub use self::console::ConsoleInputContext;
+pub use self::scene::SceneInputContext;
+pub use self::scene::SceneInputState;
 
-mod camera;
 mod console;
+mod scene;
 
-pub struct InputSystem {
+pub struct EventInterpreter {
     context_stack: Vec<InputContext>,
 }
 
-impl InputSystem {
+impl EventInterpreter {
     pub fn new() -> Self {
         Self {
             context_stack: vec![],
@@ -22,8 +21,11 @@ impl InputSystem {
     }
 
     /// Make the given `context` the top-most selected input context.
-    pub fn push_context(&mut self, context: InputContext) -> Option<Action> {
-        let mut context = context;
+    pub fn push_context<C>(&mut self, context: C) -> Option<Action>
+    where
+        C: Into<InputContext>,
+    {
+        let mut context = context.into();
         let action = context.on_active();
         self.context_stack.push(context);
         action
@@ -39,18 +41,11 @@ impl InputSystem {
         }
     }
 
-    /// Update the active input context, if any.
-    pub fn update(&mut self, frame: &Frame, entities: &mut EntitySystem) {
-        if let Some(context) = self.context_stack.last_mut() {
-            context.update(frame, entities);
-        }
-    }
-
     /// Pass the `event` to the active input context, if any.
     /// Returns `true` if the context consumed the event.
-    pub fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    pub fn consume(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
         if let Some(context) = self.context_stack.last_mut() {
-            context.receive_event(windowid, event)
+            context.interpret(windowid, event)
         } else {
             EventAction::Unconsumed
         }
@@ -72,43 +67,44 @@ impl From<Action> for EventAction {
     }
 }
 
-pub trait InputContextType {
-    fn on_active(&mut self) -> Option<Action>;
-    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction;
-    fn update(&mut self, frame: &Frame, entities: &mut EntitySystem);
+impl From<ConsoleAction> for EventAction {
+    fn from(action: ConsoleAction) -> Self {
+        EventAction::React(Action::Console(action))
+    }
 }
 
+impl From<SceneAction> for EventAction {
+    fn from(action: SceneAction) -> Self {
+        EventAction::React(Action::Scene(action))
+    }
+}
+
+/// Each input context has its own bindings.
+/// Contexts may safely bind different actions to the same events.
 pub enum InputContext {
-    Camera(CameraInputContext),
+    Scene(SceneInputContext),
     Console(ConsoleInputContext),
 }
 
-impl InputContextType for InputContext {
+impl InputContext {
     fn on_active(&mut self) -> Option<Action> {
         match self {
-            InputContext::Camera(context) => context.on_active(),
+            InputContext::Scene(context) => context.on_active(),
             InputContext::Console(context) => context.on_active(),
         }
     }
 
-    fn receive_event(&mut self, windowid: &WindowId, event: &Event<()>) -> EventAction {
+    fn interpret(&mut self, wid: &WindowId, event: &Event<()>) -> EventAction {
         match self {
-            InputContext::Camera(context) => context.receive_event(windowid, event),
-            InputContext::Console(context) => context.receive_event(windowid, event),
-        }
-    }
-
-    fn update(&mut self, frame: &Frame, entities: &mut EntitySystem) {
-        match self {
-            InputContext::Camera(context) => context.update(frame, entities),
-            InputContext::Console(context) => context.update(frame, entities),
+            InputContext::Scene(context) => context.interpret(wid, event),
+            InputContext::Console(context) => context.interpret(wid, event),
         }
     }
 }
 
-impl From<CameraInputContext> for InputContext {
-    fn from(context: CameraInputContext) -> Self {
-        InputContext::Camera(context)
+impl From<SceneInputContext> for InputContext {
+    fn from(context: SceneInputContext) -> Self {
+        InputContext::Scene(context)
     }
 }
 
