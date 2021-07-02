@@ -11,7 +11,7 @@ use wgpu_glyph::{
     SectionGeometry, SectionText, Text,
 };
 
-use crate::{app::AppConfig, frame::Frame, types::Console};
+use crate::{app::AppConfig, frame::Frame, session::ConsoleSession, types::Console};
 
 /// Responsible for rendering an overlay.
 /// This includes rendering any UI or debugging info.
@@ -53,18 +53,18 @@ impl OverlayPainter {
         device: &Device,
         color_target: &TextureView,
         bounds: (u32, u32),
-        console: &Console,
+        session: &ConsoleSession,
         triangle_count: usize,
     ) -> CommandBuffer {
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor::default());
-        if console.is_showing() {
-            self.draw_cursor(color_target, bounds, &mut encoder, console);
+        if session.is_showing() {
+            self.draw_cursor(color_target, bounds, &mut encoder, &session.console);
             self.draw_text(
                 device,
                 color_target,
                 bounds,
                 &mut encoder,
-                console.get_text().as_str(),
+                session.console.get_text().as_str(),
                 (10.0, bounds.1 as f32 - 50.0),
             );
         }

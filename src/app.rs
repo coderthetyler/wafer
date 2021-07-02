@@ -14,7 +14,8 @@ use crate::{
     paint::PaintSystem,
     physics::PhysicsSystem,
     puppet::{Puppet, PuppetSystem},
-    types::{Console, Falloff, Position, Rotation, Spin, Velocity, Volume},
+    session::ConsoleSession,
+    types::{Falloff, Position, Rotation, Spin, Velocity, Volume},
 };
 use crate::{input::EventInterpreter, puppet::FreeCameraPuppet};
 
@@ -28,7 +29,7 @@ pub struct AppConfig {
 pub struct Application {
     pub config: AppConfig,
     pub window: Window,
-    pub console: Console,
+    pub session: ConsoleSession,
 
     pub entities: EntityPool,
     pub components: EntityComponents,
@@ -49,7 +50,7 @@ impl Application {
         self.paint_system.redraw(
             &self.config,
             &self.frame,
-            &self.console,
+            &self.session,
             &self.entities,
             &self.components,
         );
@@ -133,7 +134,7 @@ impl Application {
         let mut app = Application {
             config: AppConfig::default(),
             window,
-            console: Console::new(),
+            session: ConsoleSession::new(),
 
             entities: EntityPool::new(),
             components: EntityComponents::new(),

@@ -2,7 +2,7 @@ use ascii::AsciiChar;
 
 use crate::{app::Application, input::ConsoleInputContext};
 
-use super::{Action, ActionType, ConfigAction};
+use super::{Action, ActionType};
 
 pub enum ConsoleAction {
     /// Show the console.
@@ -33,48 +33,46 @@ impl ActionType for ConsoleAction {
     fn perform(self, app: &mut Application) {
         match self {
             ConsoleAction::Show => {
-                app.console.show();
+                app.session.show();
                 let context = ConsoleInputContext::new();
                 if let Some(action) = app.interpreter.push_context(context) {
                     action.perform(app);
                 }
             }
             ConsoleAction::Hide => {
-                app.console.hide();
+                app.session.hide();
                 if let Some(action) = app.interpreter.pop_context() {
                     action.perform(app);
                 }
             }
             ConsoleAction::Insert(char) => {
-                app.console.insert(char);
+                app.session.console.insert(char);
             }
             ConsoleAction::Submit => {
-                if let Some(txt) = app.console.submit() {
-                    if let Some(action) = parse_command(txt) {
-                        action.perform(app);
-                    }
+                if let Some(action) = app.session.submit() {
+                    action.perform(app);
                 }
             }
             ConsoleAction::Backspace => {
-                app.console.backspace();
+                app.session.console.backspace();
             }
             ConsoleAction::NavigateBackwards => {
-                app.console.navigate_backwards();
+                app.session.console.navigate_backwards();
             }
             ConsoleAction::NavigateForwards => {
-                app.console.navigate_forwards();
+                app.session.console.navigate_forwards();
             }
             ConsoleAction::ShiftLeft => {
-                app.console.shift_left();
+                app.session.console.shift_left();
             }
             ConsoleAction::ShiftRight => {
-                app.console.shift_right();
+                app.session.console.shift_right();
             }
             ConsoleAction::ShiftHome => {
-                app.console.shift_home();
+                app.session.console.shift_home();
             }
             ConsoleAction::ShiftEnd => {
-                app.console.shift_end();
+                app.session.console.shift_end();
             }
         }
     }
@@ -83,15 +81,5 @@ impl ActionType for ConsoleAction {
 impl From<ConsoleAction> for Action {
     fn from(action: ConsoleAction) -> Self {
         Action::Console(action)
-    }
-}
-
-pub fn parse_command(txt: String) -> Option<Action> {
-    if txt == "exit" {
-        Some(Action::Config(ConfigAction::RequestClose))
-    } else if txt == "wires" {
-        Some(Action::Config(ConfigAction::ToglePaintColliderVolumes))
-    } else {
-        None
     }
 }
