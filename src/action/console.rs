@@ -2,7 +2,7 @@ use ascii::AsciiChar;
 
 use crate::{app::Application, input::ConsoleInputContext};
 
-use super::{Action, ActionType};
+use super::{Action, ActionType, ConfigAction};
 
 pub enum ConsoleAction {
     /// Show the console.
@@ -49,8 +49,10 @@ impl ActionType for ConsoleAction {
                 app.console.insert(char);
             }
             ConsoleAction::Submit => {
-                if let Some(action) = app.console.submit() {
-                    action.perform(app);
+                if let Some(txt) = app.console.submit() {
+                    if let Some(action) = parse_command(txt) {
+                        action.perform(app);
+                    }
                 }
             }
             ConsoleAction::Backspace => {
@@ -81,5 +83,15 @@ impl ActionType for ConsoleAction {
 impl From<ConsoleAction> for Action {
     fn from(action: ConsoleAction) -> Self {
         Action::Console(action)
+    }
+}
+
+pub fn parse_command(txt: String) -> Option<Action> {
+    if txt == "exit" {
+        Some(Action::Config(ConfigAction::RequestClose))
+    } else if txt == "wires" {
+        Some(Action::Config(ConfigAction::ToglePaintColliderVolumes))
+    } else {
+        None
     }
 }

@@ -1,7 +1,5 @@
 use ascii::{AsciiChar, AsciiString};
 
-use crate::action::{Action, ConfigAction};
-
 #[derive(PartialEq, Debug, Clone, Copy)]
 struct CursorPosition(usize);
 
@@ -84,24 +82,17 @@ impl Console {
         self.cursor = CursorPosition(self.text.len());
     }
 
-    /// Attempt to construct a command from the console text.
-    /// Returns `None` if the text is an unrecognized command.
-    /// The console is cleared regardless of success & the text is recorded in the history.
-    pub fn submit(&mut self) -> Option<Action> {
+    /// Get & clear the text of the console.
+    /// This method returns an owned `String`.
+    pub fn submit(&mut self) -> Option<String> {
         if self.text.is_empty() {
             None
         } else {
-            let mut action = None;
-            if self.text == "exit" {
-                action = Some(Action::Config(ConfigAction::RequestClose));
-            } else if self.text == "wires" {
-                action = Some(Action::Config(ConfigAction::ToglePaintColliderVolumes));
-            }
             self.backwards.push(self.text.clone());
+            let text = self.text.clone().to_string();
             self.forwards.clear();
             self.clear();
-            // TODO parse console text into an action
-            action
+            Some(text)
         }
     }
 
