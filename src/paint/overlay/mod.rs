@@ -58,15 +58,31 @@ impl OverlayPainter {
     ) -> CommandBuffer {
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor::default());
         if session.is_showing() {
-            self.draw_cursor(color_target, bounds, &mut encoder, &session.console);
+            let x = 10.0;
+            let mut y = bounds.1 as f32 - 50.0;
             self.draw_text(
                 device,
                 color_target,
                 bounds,
                 &mut encoder,
                 session.console.get_text().as_str(),
-                (10.0, bounds.1 as f32 - 50.0),
+                (x, y),
             );
+            for entry in session.console.backwards_slice().iter().rev() {
+                y -= 42.0;
+                if y <= 80.0 {
+                    break;
+                }
+                self.draw_text(
+                    device,
+                    color_target,
+                    bounds,
+                    &mut encoder,
+                    entry.as_str(),
+                    (x, y),
+                );
+            }
+            self.draw_cursor(color_target, bounds, &mut encoder, &session.console);
         }
         if !config.hide_debug_overlay {
             self.draw_text(

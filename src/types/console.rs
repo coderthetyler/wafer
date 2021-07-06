@@ -20,6 +20,14 @@ impl Console {
         }
     }
 
+    pub fn backwards_slice(&self) -> &[AsciiString] {
+        self.backwards.as_slice()
+    }
+
+    pub fn forwards_slice(&self) -> &[AsciiString] {
+        self.forwards.as_slice()
+    }
+
     /// Text currently entered at the command line
     pub fn get_text(&self) -> &AsciiString {
         &self.text
