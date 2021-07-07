@@ -68,7 +68,7 @@ impl OverlayPainter {
                 session.console.get_text().as_str(),
                 (x, y),
             );
-            for entry in session.console.backwards_slice().iter().rev() {
+            for entry in session.console.history_newest_first() {
                 y -= 42.0;
                 if y <= 80.0 {
                     break;

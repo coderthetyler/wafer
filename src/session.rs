@@ -13,7 +13,7 @@ impl ConsoleSession {
     pub fn new() -> Self {
         ConsoleSession {
             is_showing: false,
-            console: Console::new(),
+            console: Console::new(64),
         }
     }
 
