@@ -15,6 +15,7 @@ mod paint;
 mod physics;
 mod planets;
 mod puppet;
+mod session;
 mod types;
 
 fn main() {

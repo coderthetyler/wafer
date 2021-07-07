@@ -1,6 +1,6 @@
 use ascii::{AsciiChar, AsciiString};
 
-use crate::action::{Action, ConfigAction};
+use super::{CircularVec, CircularVecIter};
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 struct CursorPosition(usize);
@@ -8,32 +8,29 @@ struct CursorPosition(usize);
 pub struct Console {
     cursor: CursorPosition,
     text: AsciiString,
-    backwards: Vec<AsciiString>,
-    forwards: Vec<AsciiString>,
-    is_showing: bool,
+    history: CircularVec<AsciiString>,
+    /// Distance from last entry in history
+    index_up_history: usize,
 }
 
 impl Console {
-    pub fn new() -> Self {
+    pub fn new(len: usize) -> Self {
         Self {
             cursor: CursorPosition(0),
             text: AsciiString::new(),
-            backwards: vec![],
-            forwards: vec![],
-            is_showing: false,
+            history: CircularVec::with_len(len),
+            index_up_history: 0,
         }
     }
 
-    pub fn show(&mut self) {
-        self.is_showing = true;
+    /// Submission history ordered from newest to oldest.
+    pub fn history_newest_first(&self) -> CircularVecIter<AsciiString> {
+        self.history.iter_rev()
     }
 
-    pub fn hide(&mut self) {
-        self.is_showing = false;
-    }
-
-    pub fn is_showing(&self) -> bool {
-        self.is_showing
+    // Submission history ordered from oldest to newest.
+    pub fn history_oldest_first(&self) -> CircularVecIter<AsciiString> {
+        self.history.iter()
     }
 
     /// Text currently entered at the command line
@@ -53,11 +50,6 @@ impl Console {
             self.cursor.0 -= 1;
             self.text.remove(self.cursor.0);
         }
-    }
-
-    pub fn clear(&mut self) {
-        self.text.clear();
-        self.cursor = CursorPosition(0);
     }
 
     /// Shift the cursor one character to the left, if possible.
@@ -84,47 +76,45 @@ impl Console {
         self.cursor = CursorPosition(self.text.len());
     }
 
-    /// Attempt to construct a command from the console text.
-    /// Returns `None` if the text is an unrecognized command.
-    /// The console is cleared regardless of success & the text is recorded in the history.
-    pub fn submit(&mut self) -> Option<Action> {
+    pub fn clear(&mut self) {
+        self.text.clear();
+        self.cursor = CursorPosition(0);
+    }
+
+    /// Get & clear the text of the console.
+    /// This method returns an owned `String`.
+    pub fn submit(&mut self) -> Option<String> {
         if self.text.is_empty() {
             None
         } else {
-            let mut action = None;
-            if self.text == "exit" {
-                action = Some(Action::Config(ConfigAction::RequestClose));
-            } else if self.text == "wires" {
-                action = Some(Action::Config(ConfigAction::ToglePaintColliderVolumes));
-            }
-            self.backwards.push(self.text.clone());
-            self.forwards.clear();
+            let text = self.text.clone().to_string();
+            self.history.replace(self.text.clone());
+            self.history.advance();
+            self.index_up_history = 0;
             self.clear();
-            // TODO parse console text into an action
-            action
+            Some(text)
         }
     }
 
     /// Go back in time up the history stack, if possible.
     /// If we're already at the top, then do nothing.
     pub fn navigate_backwards(&mut self) {
-        if let Some(text) = self.backwards.pop() {
-            if !self.text.is_empty() {
-                self.forwards.push(self.text.clone());
-            }
-            self.text = text;
-            self.cursor = CursorPosition(self.text.len());
-        }
+        self.index_up_history = (self.index_up_history + 1).min(self.history.len());
+        self.text
+            .clone_from(self.history.get(self.history.len() - self.index_up_history));
+        self.cursor = CursorPosition(self.text.len());
     }
 
     /// Go forward in time down the history stack, if possible.
-    /// If we're already at the bottom, then do nothing.
+    /// If we're already at the bottom, then clear the text.
     pub fn navigate_forwards(&mut self) {
-        if let Some(text) = self.forwards.pop() {
-            if !self.text.is_empty() {
-                self.backwards.push(self.text.clone());
-            }
-            self.text = text;
+        if self.index_up_history <= 1 {
+            self.index_up_history = 0;
+            self.clear();
+        } else {
+            self.index_up_history -= 1;
+            self.text
+                .clone_from(self.history.get(self.history.len() - self.index_up_history));
             self.cursor = CursorPosition(self.text.len());
         }
     }
@@ -136,7 +126,7 @@ mod test {
 
     #[test]
     fn insert_in_empty_console() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         assert_eq!(console.text.len(), 1);
         assert_eq!(AsciiString::from_ascii("A").unwrap(), console.text);
@@ -144,7 +134,7 @@ mod test {
 
     #[test]
     fn insert_multiple_chars() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::H);
         console.insert(AsciiChar::e);
         console.insert(AsciiChar::l);
@@ -155,7 +145,7 @@ mod test {
 
     #[test]
     fn insert_after_shift_home() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.insert(AsciiChar::B);
         console.shift_home();
@@ -165,7 +155,7 @@ mod test {
 
     #[test]
     fn insert_after_shift_end() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.shift_home();
         console.insert(AsciiChar::B);
@@ -176,14 +166,14 @@ mod test {
 
     #[test]
     fn backspace_on_empty_is_noop() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.backspace();
         assert!(console.text.is_empty());
     }
 
     #[test]
     fn backspace_removes_single_char() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.insert(AsciiChar::B);
         console.backspace();
@@ -192,7 +182,7 @@ mod test {
 
     #[test]
     fn backspace_can_remove_all_chars() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.insert(AsciiChar::B);
         console.backspace();
@@ -202,7 +192,7 @@ mod test {
 
     #[test]
     fn backspace_after_shift_left() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.insert(AsciiChar::B);
         console.insert(AsciiChar::C);
@@ -213,7 +203,7 @@ mod test {
 
     #[test]
     fn shift_left_moves_cursor_left() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.shift_left();
         assert_eq!(CursorPosition(0), console.cursor);
@@ -221,7 +211,7 @@ mod test {
 
     #[test]
     fn shift_left_moves_cursor_right() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.shift_home();
         console.shift_right();
@@ -230,21 +220,21 @@ mod test {
 
     #[test]
     fn shift_left_at_home_is_noop() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.shift_left();
         assert_eq!(CursorPosition(0), console.cursor);
     }
 
     #[test]
     fn shift_right_at_end_is_noop() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.shift_right();
         assert_eq!(CursorPosition(0), console.cursor);
     }
 
     #[test]
     fn clear_empties_text_and_moves_cursor_home() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.insert(AsciiChar::B);
         console.insert(AsciiChar::C);
@@ -255,7 +245,7 @@ mod test {
 
     #[test]
     fn insert_after_clear() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.insert(AsciiChar::B);
         console.insert(AsciiChar::C);
@@ -273,7 +263,7 @@ mod test {
 
     #[test]
     fn submit_adds_history() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.submit();
         console.navigate_backwards();
@@ -282,7 +272,7 @@ mod test {
 
     #[test]
     fn submit_clears_text() {
-        let mut console = Console::new();
+        let mut console = Console::new(16);
         console.insert(AsciiChar::A);
         console.submit();
         assert!(console.text.is_empty());

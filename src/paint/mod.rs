@@ -8,7 +8,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 use crate::{
     app::AppConfig,
     camera::Camera,
-    types::Console,
+    session::ConsoleSession,
     entity::{Entity, EntityComponents, EntityPool},
     frame::Frame,
 };
@@ -106,7 +106,7 @@ impl PaintSystem {
         &mut self,
         state: &AppConfig,
         frame: &Frame,
-        console: &Console,
+        session: &ConsoleSession,
         entities: &EntityPool,
         components: &EntityComponents,
     ) {
@@ -143,12 +143,12 @@ impl PaintSystem {
                 &self.surface.device,
                 color_target,
                 color_target_bounds,
-                console,
+                session,
                 10, // TODO re-add triangle counting
             ),
         ];
         self.surface.queue.submit(commands);
-        if console.is_showing() {
+        if session.is_showing() {
             self.overlay.recycle();
         }
     }

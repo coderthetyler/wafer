@@ -33,46 +33,46 @@ impl ActionType for ConsoleAction {
     fn perform(self, app: &mut Application) {
         match self {
             ConsoleAction::Show => {
-                app.console.show();
+                app.session.show();
                 let context = ConsoleInputContext::new();
                 if let Some(action) = app.interpreter.push_context(context) {
                     action.perform(app);
                 }
             }
             ConsoleAction::Hide => {
-                app.console.hide();
+                app.session.hide();
                 if let Some(action) = app.interpreter.pop_context() {
                     action.perform(app);
                 }
             }
             ConsoleAction::Insert(char) => {
-                app.console.insert(char);
+                app.session.console.insert(char);
             }
             ConsoleAction::Submit => {
-                if let Some(action) = app.console.submit() {
+                if let Some(action) = app.session.submit() {
                     action.perform(app);
                 }
             }
             ConsoleAction::Backspace => {
-                app.console.backspace();
+                app.session.console.backspace();
             }
             ConsoleAction::NavigateBackwards => {
-                app.console.navigate_backwards();
+                app.session.console.navigate_backwards();
             }
             ConsoleAction::NavigateForwards => {
-                app.console.navigate_forwards();
+                app.session.console.navigate_forwards();
             }
             ConsoleAction::ShiftLeft => {
-                app.console.shift_left();
+                app.session.console.shift_left();
             }
             ConsoleAction::ShiftRight => {
-                app.console.shift_right();
+                app.session.console.shift_right();
             }
             ConsoleAction::ShiftHome => {
-                app.console.shift_home();
+                app.session.console.shift_home();
             }
             ConsoleAction::ShiftEnd => {
-                app.console.shift_end();
+                app.session.console.shift_end();
             }
         }
     }
