@@ -1,6 +1,6 @@
-# voxel-planet
+# whitespace
 
-A tech demo
+A tech demo template
 
 ![Latest screenshot](screenshots/latest.png)
 
