@@ -26,7 +26,7 @@ impl VolumePainter {
         });
         let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/box.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/volumes.wgsl").into()),
             flags: wgpu::ShaderFlags::all(),
         });
         let instance_layout = wgpu::VertexBufferLayout {
