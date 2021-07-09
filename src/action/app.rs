@@ -21,7 +21,7 @@ impl ActionType for ConfigAction {
                 app.config.hide_debug_overlay ^= true;
             }
             ConfigAction::ToglePaintColliderVolumes => {
-                app.config.show_collider_volumes ^= true;
+                app.config.hide_volumes ^= true;
             }
         }
     }

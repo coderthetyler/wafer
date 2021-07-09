@@ -22,7 +22,7 @@ use crate::{input::EventInterpreter, puppet::FreeCameraPuppet};
 #[derive(Default)]
 pub struct AppConfig {
     pub hide_debug_overlay: bool,
-    pub show_collider_volumes: bool,
+    pub hide_volumes: bool,
     pub should_exit: bool,
 }
 

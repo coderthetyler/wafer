@@ -198,7 +198,7 @@ impl ScenePainter {
             }
 
             // Collider painter
-            if config.show_collider_volumes {
+            if !config.hide_volumes {
                 let pntr = &mut self.collider_painter;
                 pntr.update(&ctx.surface.device, entities, components);
                 render_pass.set_pipeline(&pntr.pipeline);
