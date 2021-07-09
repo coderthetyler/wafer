@@ -1,5 +1,4 @@
 mod colliders;
-mod voxels;
 
 use cgmath::{Deg, Vector3};
 use wgpu::{
@@ -15,7 +14,7 @@ use crate::{
     types::{AspectRatio, Position, Rotation},
 };
 
-use self::{colliders::ColliderPainter, voxels::VoxelPainter};
+use self::colliders::ColliderPainter;
 
 use super::{texture::Texture, PaintContext};
 
@@ -44,7 +43,6 @@ impl WorldUniforms {
 pub struct ScenePainter {
     depth_texture: Texture,
 
-    voxel_painter: VoxelPainter,
     collider_painter: ColliderPainter,
 
     uniforms: WorldUniforms,
@@ -83,11 +81,9 @@ impl ScenePainter {
             }],
         });
         let depth_texture = Texture::new_depth_texture(device, &swapchain_desc);
-        let voxel_painter = VoxelPainter::new(device, swapchain_desc, &uniform_group_layout);
         let collider_painter = ColliderPainter::new(device, swapchain_desc, &uniform_group_layout);
         Self {
             depth_texture,
-            voxel_painter,
             collider_painter,
             uniforms,
             uniform_buffer,
@@ -185,19 +181,6 @@ impl ScenePainter {
                 }),
             });
 
-            // Voxel painter
-            {
-                let pntr = &mut self.voxel_painter;
-                render_pass.set_pipeline(&pntr.pipeline);
-                render_pass.set_bind_group(0, &self.uniform_group, &[]);
-                for buf in &pntr.mesh_buffers {
-                    render_pass.set_vertex_buffer(0, buf.vertices.slice(..));
-                    render_pass.set_index_buffer(buf.indices.slice(..), wgpu::IndexFormat::Uint32);
-                    render_pass.draw_indexed(0..buf.index_count, 0, 0..1);
-                }
-            }
-
-            // Collider painter
             if !config.hide_volumes {
                 let pntr = &mut self.collider_painter;
                 pntr.update(&ctx.surface.device, entities, components);
