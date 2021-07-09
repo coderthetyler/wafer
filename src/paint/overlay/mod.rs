@@ -147,7 +147,7 @@ impl OverlayPainter {
         position: (f32, f32),
     ) {
         let prompt_text = Text::new(text)
-            .with_color([1.0, 1.0, 1.0, 1.0])
+            .with_color([0.0, 0.0, 0.0, 1.0])
             .with_scale(35.0);
         let prompt_section = Section::default()
             .with_screen_position(position)

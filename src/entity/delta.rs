@@ -9,7 +9,6 @@ use super::{Entity, EntityComponents};
 /// This type should be viewed as a repertoire of all possible ways of mutating an entity.
 #[derive(Clone, Copy)]
 pub enum EntityDelta {
-    /// Tran
     Translate(f32, f32, f32),
     SetRotation(Rotation),
 }

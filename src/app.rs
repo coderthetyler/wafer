@@ -34,11 +34,11 @@ pub struct Application {
     pub entities: EntityPool,
     pub components: EntityComponents,
 
-    pub paint_system: PaintSystem,
     pub movement_system: MovementSystem,
     pub puppet_system: PuppetSystem,
     pub physics_system: PhysicsSystem,
 
+    pub paint_system: PaintSystem,
     pub interpreter: EventInterpreter,
 
     pub frame: Frame,
