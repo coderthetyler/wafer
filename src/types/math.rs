@@ -15,12 +15,6 @@ pub struct Position {
     pub z: f32,
 }
 
-impl Position {
-    pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Self { x, y, z }
-    }
-}
-
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Rotation {
     pub pitch: f32,
@@ -28,34 +22,11 @@ pub struct Rotation {
     pub roll: f32,
 }
 
-impl Rotation {
-    pub fn with_yaw(mut self, yaw: f32) -> Self {
-        self.yaw = yaw;
-        self
-    }
-
-    pub fn with_pitch(mut self, pitch: f32) -> Self {
-        self.pitch = pitch;
-        self
-    }
-
-    pub fn with_roll(mut self, roll: f32) -> Self {
-        self.roll = roll;
-        self
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3i {
     pub x: i32,
     pub y: i32,
     pub z: i32,
-}
-
-impl Vec3i {
-    pub fn zero() -> Self {
-        Vec3i { x: 0, y: 0, z: 0 }
-    }
 }
 
 impl From<[i32; 3]> for Vec3i {
@@ -114,15 +85,12 @@ impl Add<[f32; 3]> for Vec3f {
 pub enum Falloff {
     /// Weight is divided each iteration.
     Geometric(f32),
-    /// Weight is subtracted each iteration.
-    Linear(f32),
 }
 
 impl Falloff {
     pub fn apply(&self, weight: f32) -> f32 {
         match self {
             Falloff::Geometric(falloff) => weight / falloff,
-            Falloff::Linear(falloff) => (weight - falloff).max(0.0),
         }
     }
 }

@@ -73,8 +73,11 @@ impl FreeCameraPuppet {
             pitch += pitch_delta as f32 * sensitivity;
             pitch = pitch.min(90.0).max(-90.0);
 
-            payload +=
-                EntityDelta::SetRotation(Rotation::default().with_yaw(yaw).with_pitch(pitch));
+            payload += EntityDelta::SetRotation(Rotation {
+                pitch,
+                yaw,
+                roll: 0.0,
+            });
 
             fn get_forward_vector(yaw: f32, pitch: f32) -> [f32; 3] {
                 let yaw = Deg(-yaw);

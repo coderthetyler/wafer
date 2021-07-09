@@ -3,15 +3,12 @@ use futures::{
     task::SpawnExt,
 };
 use wgpu::{
-    util::StagingBelt, CommandBuffer, CommandEncoder, CommandEncoderDescriptor, Device, LoadOp,
-    Operations, RenderPassColorAttachment, RenderPassDescriptor, TextureFormat, TextureView,
+    util::StagingBelt, CommandBuffer, CommandEncoder, CommandEncoderDescriptor, Device,
+    TextureFormat, TextureView,
 };
-use wgpu_glyph::{
-    ab_glyph::FontArc, GlyphBrush, GlyphBrushBuilder, GlyphPositioner, Layout, Section,
-    SectionGeometry, SectionText, Text,
-};
+use wgpu_glyph::{ab_glyph::FontArc, GlyphBrush, GlyphBrushBuilder, Section, Text};
 
-use crate::{app::AppConfig, frame::Frame, session::ConsoleSession, types::Console};
+use crate::{app::AppConfig, frame::Frame, session::ConsoleSession};
 
 /// Responsible for rendering an overlay.
 /// This includes rendering any UI or debugging info.
@@ -82,7 +79,6 @@ impl OverlayPainter {
                     (x, y),
                 );
             }
-            self.draw_cursor(color_target, bounds, &mut encoder, &session.console);
         }
         if !config.hide_debug_overlay {
             self.draw_text(
@@ -102,39 +98,6 @@ impl OverlayPainter {
 
         self.staging_belt.finish();
         encoder.finish()
-    }
-
-    fn draw_cursor(
-        &mut self,
-        color_target: &TextureView,
-        (width, height): (u32, u32),
-        encoder: &mut CommandEncoder,
-        console: &Console,
-    ) {
-        let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-            label: None,
-            color_attachments: &[RenderPassColorAttachment {
-                view: color_target,
-                resolve_target: None,
-                ops: Operations {
-                    load: LoadOp::Load,
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: None,
-        });
-        let prompt_text = SectionText {
-            text: console.get_text().as_str(),
-            scale: 40.0.into(),
-            font_id: wgpu_glyph::FontId(0),
-        };
-        let prompt_glyphs = Layout::default().calculate_glyphs(
-            self.glyph_brush.fonts(),
-            &SectionGeometry::default(),
-            &[prompt_text],
-        );
-        // TODO calculate cursor screen position from prompt glyphs
-        // TODO upload uniform containing info on new screen position
     }
 
     fn draw_text(
@@ -164,19 +127,5 @@ impl OverlayPainter {
                 height,
             )
             .expect("Draw queued");
-    }
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct Uniforms {
-    cursor_position: [f32; 2],
-}
-
-impl Uniforms {
-    fn new() -> Self {
-        Self {
-            cursor_position: [0.0, 0.0],
-        }
     }
 }

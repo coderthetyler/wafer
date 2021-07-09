@@ -1,6 +1,6 @@
 use crate::types::Rotation;
 
-use super::{Ecs, Entity, EntityComponents};
+use super::{Entity, EntityComponents};
 
 /// An entity delta is a message passing primitive.
 /// If a delta is not applicable to an entity, then it is a no-op when applied to that entity.
@@ -14,7 +14,6 @@ pub enum EntityDelta {
 }
 
 impl EntityDelta {
-    /// Apply the delta to a target `entity`.
     pub fn apply_to(self, entity: Entity, comps: &mut EntityComponents) {
         match self {
             EntityDelta::Translate(x, y, z) => {

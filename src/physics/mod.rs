@@ -7,5 +7,5 @@ impl PhysicsSystem {
         Self {}
     }
 
-    pub fn update(&self, frame: &Frame, ecs: &mut Ecs) {}
+    pub fn update(&self, _frame: &Frame, _ecs: &mut Ecs) {}
 }

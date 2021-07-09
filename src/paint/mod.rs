@@ -7,7 +7,6 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
     app::AppConfig,
-    camera::Camera,
     entity::{Ecs, Entity},
     frame::Frame,
     session::ConsoleSession,
@@ -36,7 +35,6 @@ pub struct PaintContext<'surface> {
 
 pub struct PaintSystem {
     surface: PaintSurface,
-    fallback_camera: Camera,
     pub active_camera: Entity,
     pub scene: ScenePainter,
     pub overlay: OverlayPainter,
@@ -78,7 +76,6 @@ impl PaintSystem {
         let overlay_painter = OverlayPainter::new(&device);
         Self {
             active_camera: Entity::none(),
-            fallback_camera: Camera::new(),
             surface: PaintSurface {
                 surface,
                 device,
@@ -109,11 +106,6 @@ impl PaintSystem {
         session: &ConsoleSession,
         ecs: &Ecs,
     ) {
-        let camera = ecs
-            .comps
-            .camera
-            .get(self.active_camera)
-            .unwrap_or(&self.fallback_camera);
         let surface = &mut self.surface;
         let swapchain_texture = match surface.swapchain.get_current_frame() {
             Ok(frame) => frame.output,
@@ -128,7 +120,6 @@ impl PaintSystem {
             width: surface.swapchain_desc.width as f32,
             height: surface.swapchain_desc.height as f32,
         };
-        // ctx: &mut PaintContext, camera: &Camera
         let commands: Vec<CommandBuffer> = vec![
             self.scene
                 .paint(state, &mut context, self.active_camera, ecs),

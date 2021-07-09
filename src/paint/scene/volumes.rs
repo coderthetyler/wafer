@@ -166,16 +166,3 @@ pub struct VertexData {
 pub struct InstanceData {
     model: [[f32; 4]; 4],
 }
-
-impl InstanceData {
-    fn new() -> Self {
-        Self {
-            model: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
-        }
-    }
-}
