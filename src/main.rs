@@ -21,12 +21,11 @@ fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("voxel-planet")
-        .with_visible(false)
         .build(&event_loop)
         .unwrap();
-    window.set_visible(true);
 
     let mut app = futures::executor::block_on(Application::new(window));
+    app.start();
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         app.receive_event(&event, control_flow);

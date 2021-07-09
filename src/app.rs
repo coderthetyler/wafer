@@ -118,9 +118,107 @@ impl Application {
         EventAction::Unconsumed
     }
 
+    pub fn start(&mut self) {
+        let player = self.ecs.pool.allocate();
+        self.ecs.comps.camera.set(player, Camera::new());
+        self.ecs.comps.position.set(
+            player,
+            Position {
+                x: 0.0,
+                y: 0.5,
+                z: 10.0,
+            },
+        );
+        self.ecs.comps.rotation.set(
+            player,
+            Rotation {
+                pitch: 0.0,
+                yaw: 180.0,
+                roll: 0.0,
+            },
+        );
+        self.ecs.comps.puppet.set(
+            player,
+            Puppet::FreeCamera(FreeCameraPuppet::new(10, Falloff::Geometric(1.8))),
+        );
+        self.paint_system.active_camera = player;
+
+        let cube_friend_0 = self.ecs.pool.allocate();
+        self.ecs.comps.velocity.set(
+            cube_friend_0,
+            Velocity {
+                x: 0.2,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        self.ecs.comps.position.set(
+            cube_friend_0,
+            Position {
+                x: -2.0,
+                y: -2.0,
+                z: 0.0,
+            },
+        );
+        self.ecs.comps.volumes.set(
+            cube_friend_0,
+            Volume::Box {
+                x: 0.75,
+                y: 0.75,
+                z: 0.75,
+            },
+        );
+        self.ecs.comps.rotation.set(
+            cube_friend_0,
+            Rotation {
+                pitch: 45.0,
+                yaw: 45.0,
+                roll: 45.0,
+            },
+        );
+        self.ecs.comps.spin.set(
+            cube_friend_0,
+            Spin {
+                x: 2.0,
+                y: 4.5,
+                z: 6.5,
+            },
+        );
+
+        let cube_friend_1 = self.ecs.pool.allocate();
+        self.ecs.comps.velocity.set(
+            cube_friend_1,
+            Velocity {
+                x: -0.1,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        self.ecs.comps.position.set(
+            cube_friend_1,
+            Position {
+                x: 4.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        self.ecs.comps.volumes.set(
+            cube_friend_1,
+            Volume::Box {
+                x: 0.75,
+                y: 0.50,
+                z: 0.75,
+            },
+        );
+        if let Some(action) = self.events.push_context(SceneInputContext::new()) {
+            action.perform(self);
+        }
+        self.window.set_cursor_visible(false);
+    }
+
     pub async fn new(window: Window) -> Self {
         let paint_system = PaintSystem::new(&window).await;
-        let mut app = Application {
+        Self {
             config: AppConfig::default(),
             window,
             session: ConsoleSession::new(),
@@ -134,102 +232,6 @@ impl Application {
 
             events: EventInterpreter::new(),
             frame: Frame::new(60, Falloff::Geometric(1.1)),
-        };
-
-        let player = app.ecs.pool.allocate();
-        app.ecs.comps.camera.set(player, Camera::new());
-        app.ecs.comps.position.set(
-            player,
-            Position {
-                x: 0.0,
-                y: 0.5,
-                z: 10.0,
-            },
-        );
-        app.ecs.comps.rotation.set(
-            player,
-            Rotation {
-                pitch: 0.0,
-                yaw: 180.0,
-                roll: 0.0,
-            },
-        );
-        app.ecs.comps.puppet.set(
-            player,
-            Puppet::FreeCamera(FreeCameraPuppet::new(10, Falloff::Geometric(1.8))),
-        );
-        app.paint_system.active_camera = player;
-
-        let cube_friend_0 = app.ecs.pool.allocate();
-        app.ecs.comps.velocity.set(
-            cube_friend_0,
-            Velocity {
-                x: 0.2,
-                y: 0.0,
-                z: 0.0,
-            },
-        );
-        app.ecs.comps.position.set(
-            cube_friend_0,
-            Position {
-                x: -2.0,
-                y: -2.0,
-                z: 0.0,
-            },
-        );
-        app.ecs.comps.volumes.set(
-            cube_friend_0,
-            Volume::Box {
-                x: 0.75,
-                y: 0.75,
-                z: 0.75,
-            },
-        );
-        app.ecs.comps.rotation.set(
-            cube_friend_0,
-            Rotation {
-                pitch: 45.0,
-                yaw: 45.0,
-                roll: 45.0,
-            },
-        );
-        app.ecs.comps.spin.set(
-            cube_friend_0,
-            Spin {
-                x: 2.0,
-                y: 4.5,
-                z: 6.5,
-            },
-        );
-
-        let cube_friend_1 = app.ecs.pool.allocate();
-        app.ecs.comps.velocity.set(
-            cube_friend_1,
-            Velocity {
-                x: -0.1,
-                y: 0.0,
-                z: 0.0,
-            },
-        );
-        app.ecs.comps.position.set(
-            cube_friend_1,
-            Position {
-                x: 4.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        );
-        app.ecs.comps.volumes.set(
-            cube_friend_1,
-            Volume::Box {
-                x: 0.75,
-                y: 0.50,
-                z: 0.75,
-            },
-        );
-        if let Some(action) = app.events.push_context(SceneInputContext::new()) {
-            action.perform(&mut app);
         }
-        app
     }
 }
