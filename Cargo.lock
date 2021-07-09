@@ -1747,21 +1747,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
 
 [[package]]
-name = "voxel-planet"
-version = "0.1.0"
-dependencies = [
- "ascii",
- "bytemuck",
- "cgmath",
- "futures",
- "rand 0.8.3",
- "rand_chacha 0.3.0",
- "wgpu",
- "wgpu_glyph",
- "winit",
-]
-
-[[package]]
 name = "walkdir"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2002,6 +1987,21 @@ dependencies = [
  "glyph_brush",
  "log",
  "wgpu",
+]
+
+[[package]]
+name = "whitespace"
+version = "0.1.0"
+dependencies = [
+ "ascii",
+ "bytemuck",
+ "cgmath",
+ "futures",
+ "rand 0.8.3",
+ "rand_chacha 0.3.0",
+ "wgpu",
+ "wgpu_glyph",
+ "winit",
 ]
 
 [[package]]

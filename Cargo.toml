@@ -1,8 +1,8 @@
 [package]
 authors = ["T.J. Daddio"]
-description = "A tech demo"
+description = "A tech demo template"
 edition = "2018"
-name = "voxel-planet"
+name = "whitespace"
 version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
