@@ -189,7 +189,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.components.colliders.set(
+        app.components.volumes.set(
             cube_friend_0,
             Volume::Box {
                 x: 0.75,
@@ -231,7 +231,7 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.components.colliders.set(
+        app.components.volumes.set(
             cube_friend_1,
             Volume::Box {
                 x: 0.75,

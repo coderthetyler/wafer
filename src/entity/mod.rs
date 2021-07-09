@@ -18,7 +18,7 @@ pub struct EntityComponents {
     pub velocity: ComponentVec<Velocity>,
     pub rotation: ComponentVec<Rotation>,
     pub spin: ComponentVec<Spin>,
-    pub colliders: ComponentVec<Volume>,
+    pub volumes: ComponentVec<Volume>,
     pub camera: ComponentVec<Camera>,
     pub puppet: ComponentVec<Puppet>,
 }
@@ -30,7 +30,7 @@ impl EntityComponents {
             velocity: ComponentVec::new(),
             rotation: ComponentVec::new(),
             spin: ComponentVec::new(),
-            colliders: ComponentVec::new(),
+            volumes: ComponentVec::new(),
             camera: ComponentVec::new(),
             puppet: ComponentVec::new(),
         }

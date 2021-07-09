@@ -43,7 +43,7 @@ impl WorldUniforms {
 pub struct ScenePainter {
     depth_texture: Texture,
 
-    collider_painter: VolumePainter,
+    volume_painter: VolumePainter,
 
     uniforms: WorldUniforms,
     uniform_buffer: wgpu::Buffer,
@@ -81,10 +81,10 @@ impl ScenePainter {
             }],
         });
         let depth_texture = Texture::new_depth_texture(device, &swapchain_desc);
-        let collider_painter = VolumePainter::new(device, swapchain_desc, &uniform_group_layout);
+        let volume_painter = VolumePainter::new(device, swapchain_desc, &uniform_group_layout);
         Self {
             depth_texture,
-            collider_painter,
+            volume_painter,
             uniforms,
             uniform_buffer,
             uniform_group,
@@ -182,7 +182,7 @@ impl ScenePainter {
             });
 
             if !config.hide_volumes {
-                let pntr = &mut self.collider_painter;
+                let pntr = &mut self.volume_painter;
                 pntr.update(&ctx.surface.device, entities, components);
                 render_pass.set_pipeline(&pntr.pipeline);
                 render_pass.set_bind_group(0, &self.uniform_group, &[]);

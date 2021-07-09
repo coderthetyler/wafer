@@ -116,12 +116,11 @@ impl VolumePainter {
         }
     }
 
-    /// Update the painter with updated collider info
     pub fn update(&mut self, device: &Device, entities: &EntityPool, components: &EntityComponents) {
         /// Interpret an entity as an instance to draw
         fn entity_to_instance(entity: Entity, components: &EntityComponents) -> Option<InstanceData> {
             if let (Some(pos), Some(Volume::Box { x, y, z })) =
-                (components.position.get(entity), components.colliders.get(entity))
+                (components.position.get(entity), components.volumes.get(entity))
             {
                 let mut model: Matrix4<f32> = cgmath::Matrix4::identity();
 
