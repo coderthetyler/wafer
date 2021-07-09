@@ -1,11 +1,11 @@
 use super::Application;
 
-pub use self::app::ConfigAction;
+pub use self::config::ConfigAction;
 pub use self::console::ConsoleAction;
 pub use self::scene::SceneAction;
 pub use self::window::WindowAction;
 
-mod app;
+mod config;
 mod console;
 mod scene;
 mod window;
