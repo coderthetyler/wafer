@@ -1,4 +1,4 @@
-mod colliders;
+mod volumes;
 
 use cgmath::{Deg, Vector3};
 use wgpu::{
@@ -14,7 +14,7 @@ use crate::{
     types::{AspectRatio, Position, Rotation},
 };
 
-use self::colliders::ColliderPainter;
+use self::volumes::VolumePainter;
 
 use super::{texture::Texture, PaintContext};
 
@@ -43,7 +43,7 @@ impl WorldUniforms {
 pub struct ScenePainter {
     depth_texture: Texture,
 
-    collider_painter: ColliderPainter,
+    collider_painter: VolumePainter,
 
     uniforms: WorldUniforms,
     uniform_buffer: wgpu::Buffer,
@@ -81,7 +81,7 @@ impl ScenePainter {
             }],
         });
         let depth_texture = Texture::new_depth_texture(device, &swapchain_desc);
-        let collider_painter = ColliderPainter::new(device, swapchain_desc, &uniform_group_layout);
+        let collider_painter = VolumePainter::new(device, swapchain_desc, &uniform_group_layout);
         Self {
             depth_texture,
             collider_painter,

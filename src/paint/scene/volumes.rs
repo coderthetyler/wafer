@@ -4,8 +4,7 @@ use wgpu::{util::DeviceExt, BindGroupLayout, Device};
 
 use crate::{entity::{Entity, EntityComponents, EntityPool}, types::Volume, paint::texture::Texture};
 
-/// All data required to draw collider volumes, if enabled.
-pub struct ColliderPainter {
+pub struct VolumePainter {
     pub pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
@@ -14,7 +13,7 @@ pub struct ColliderPainter {
     pub instance_count: u32,
 }
 
-impl ColliderPainter {
+impl VolumePainter {
     pub fn new(
         device: &Device,
         swapchain_desc: &wgpu::SwapChainDescriptor,
