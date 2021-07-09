@@ -35,13 +35,13 @@ impl ActionType for ConsoleAction {
             ConsoleAction::Show => {
                 app.session.show();
                 let context = ConsoleInputContext::new();
-                if let Some(action) = app.interpreter.push_context(context) {
+                if let Some(action) = app.events.push_context(context) {
                     action.perform(app);
                 }
             }
             ConsoleAction::Hide => {
                 app.session.hide();
-                if let Some(action) = app.interpreter.pop_context() {
+                if let Some(action) = app.events.pop_context() {
                     action.perform(app);
                 }
             }

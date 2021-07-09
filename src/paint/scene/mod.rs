@@ -10,7 +10,7 @@ use wgpu::{
 use crate::{
     app::AppConfig,
     camera::Camera,
-    entity::{Entity, EntityComponents, EntityPool},
+    entity::{Ecs, Entity},
     types::{AspectRatio, Position, Rotation},
 };
 
@@ -121,22 +121,21 @@ impl ScenePainter {
         config: &AppConfig,
         ctx: &mut PaintContext,
         viewer: Entity,
-        entities: &EntityPool,
-        components: &EntityComponents,
+        ecs: &Ecs,
     ) -> CommandBuffer {
-        let pos = components.position.get(viewer).unwrap_or(&Position {
+        let pos = ecs.comps.position.get(viewer).unwrap_or(&Position {
             x: 0.0,
             y: 0.0,
             z: 0.0,
         });
         let pos = [pos.x, pos.y, pos.z].into();
-        let rot = components.rotation.get(viewer).unwrap_or(&Rotation {
+        let rot = ecs.comps.rotation.get(viewer).unwrap_or(&Rotation {
             pitch: 0.0,
             yaw: 0.0,
             roll: 0.0,
         });
         let rot = [rot.pitch, rot.yaw, rot.roll].into();
-        let camera = components.camera.get(viewer).unwrap_or(&Camera {
+        let camera = ecs.comps.camera.get(viewer).unwrap_or(&Camera {
             fovy: 45.0,
             znear: 0.1,
             zfar: 1000.0,
@@ -183,7 +182,7 @@ impl ScenePainter {
 
             if !config.hide_volumes {
                 let pntr = &mut self.volume_painter;
-                pntr.update(&ctx.surface.device, entities, components);
+                pntr.update(&ctx.surface.device, ecs);
                 render_pass.set_pipeline(&pntr.pipeline);
                 render_pass.set_bind_group(0, &self.uniform_group, &[]);
                 render_pass.set_vertex_buffer(0, pntr.vertex_buffer.slice(..));

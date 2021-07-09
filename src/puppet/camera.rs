@@ -3,7 +3,7 @@ use core::f32;
 use cgmath::{Angle, Deg, InnerSpace, Vector3};
 
 use crate::{
-    entity::{Entity, EntityComponents, EntityDelta},
+    entity::{Ecs, Entity, EntityDelta},
     frame::Frame,
     types::{CircularVec, Falloff, Payload, Rotation},
 };
@@ -54,19 +54,14 @@ impl FreeCameraPuppet {
         }
     }
 
-    pub fn gen_deltas(
-        &self,
-        frame: &Frame,
-        entity: Entity,
-        components: &EntityComponents,
-    ) -> Payload<EntityDelta> {
+    pub fn gen_deltas(&self, frame: &Frame, entity: Entity, ecs: &Ecs) -> Payload<EntityDelta> {
         let mut payload: Payload<EntityDelta> = Payload::new();
 
         let mut forward: Vector3<f32> = Vector3::unit_z();
         let mut right: Vector3<f32> = -Vector3::unit_x();
 
         // rotation
-        if let Some(rot) = components.rotation.get(entity) {
+        if let Some(rot) = ecs.comps.rotation.get(entity) {
             let sensitivity = 0.1;
 
             let (yaw_delta, pitch_delta) = self.calculate_smooth_pan();
@@ -103,7 +98,7 @@ impl FreeCameraPuppet {
         }
 
         // position
-        if components.position.get(entity).is_some() {
+        if ecs.comps.position.get(entity).is_some() {
             let speed = 20.0;
 
             let up: Vector3<f32> = forward.cross(right).normalize();

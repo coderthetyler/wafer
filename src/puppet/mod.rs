@@ -1,7 +1,7 @@
 mod camera;
 
 use crate::{
-    entity::{Entity, EntityComponents, EntityDelta, EntityPool},
+    entity::{Ecs, Entity, EntityDelta},
     frame::Frame,
     types::Payload,
 };
@@ -24,14 +24,9 @@ impl Puppet {
     }
 
     /// Generate a set of deltas to be applied to the `entity`.
-    pub fn gen_deltas(
-        &self,
-        frame: &Frame,
-        entity: Entity,
-        components: &EntityComponents,
-    ) -> Payload<EntityDelta> {
+    pub fn gen_deltas(&self, frame: &Frame, entity: Entity, ecs: &Ecs) -> Payload<EntityDelta> {
         match self {
-            Puppet::FreeCamera(puppet) => puppet.gen_deltas(frame, entity, components),
+            Puppet::FreeCamera(puppet) => puppet.gen_deltas(frame, entity, ecs),
         }
     }
 }
@@ -43,16 +38,15 @@ impl PuppetSystem {
         Self {}
     }
 
-    pub fn update(&self, frame: &Frame, entities: &EntityPool, components: &mut EntityComponents) {
-        for entity in entities.iter() {
-            if let Some(puppet) = components.puppet.get_mut(entity) {
+    pub fn update(&self, frame: &Frame, ecs: &mut Ecs) {
+        for entity in ecs.pool.iter() {
+            if let Some(puppet) = ecs.comps.puppet.get_mut(entity) {
                 puppet.pre_update(frame);
             }
-            if let Some(puppet) = components.puppet.get(entity) {
-                puppet
-                    .gen_deltas(frame, entity, components)
-                    .iter()
-                    .for_each(|delta| delta.apply_to(entity, components));
+            if let Some(puppet) = ecs.comps.puppet.get(entity) {
+                for delta in puppet.gen_deltas(frame, entity, ecs).iter() {
+                    delta.apply_to(entity, &mut ecs.comps);
+                }
             }
         }
     }

@@ -1,7 +1,4 @@
-use crate::{
-    entity::{EntityComponents, EntityPool},
-    frame::Frame,
-};
+use crate::{entity::Ecs, frame::Frame};
 
 pub struct MovementSystem {}
 
@@ -10,12 +7,12 @@ impl MovementSystem {
         Self {}
     }
 
-    pub fn update(&self, frame: &Frame, entities: &EntityPool, components: &mut EntityComponents) {
+    pub fn update(&self, frame: &Frame, ecs: &mut Ecs) {
         let delta = frame.delta.as_f32();
-        for entity in entities.iter() {
+        for entity in ecs.pool.iter() {
             if let (Some(pos), Some(vel)) = (
-                components.position.get_mut(entity),
-                components.velocity.get(entity),
+                ecs.comps.position.get_mut(entity),
+                ecs.comps.velocity.get(entity),
             ) {
                 pos.x += vel.x * delta;
                 pos.y += vel.y * delta;
@@ -23,8 +20,8 @@ impl MovementSystem {
             }
 
             if let (Some(rot), Some(vel)) = (
-                components.rotation.get_mut(entity),
-                components.spin.get(entity),
+                ecs.comps.rotation.get_mut(entity),
+                ecs.comps.spin.get(entity),
             ) {
                 rot.pitch += vel.x * delta;
                 rot.yaw += vel.y * delta;

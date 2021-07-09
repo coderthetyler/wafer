@@ -58,7 +58,7 @@ impl SceneInputContext {
     }
 
     pub fn on_active(&mut self) -> Option<Action> {
-        Some(Action::Window(WindowAction::GrabCursor))
+        Some(WindowAction::GrabCursor.into())
     }
 
     #[allow(clippy::collapsible_match, clippy::single_match)]

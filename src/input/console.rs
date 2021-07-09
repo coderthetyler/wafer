@@ -28,7 +28,7 @@ impl ConsoleInputContext {
 impl ConsoleInputContext {
     pub fn on_active(&mut self) -> Option<Action> {
         self.did_just_open = true;
-        Some(Action::Window(WindowAction::UngrabCursor))
+        Some(WindowAction::UngrabCursor.into())
     }
 
     #[allow(clippy::single_match, clippy::collapsible_match)]

@@ -7,7 +7,7 @@ use winit::{
 use crate::{
     action::{Action, ActionType, ConfigAction},
     camera::Camera,
-    entity::{EntityComponents, EntityPool},
+    entity::Ecs,
     frame::Frame,
     input::{EventAction, SceneInputContext},
     movement::MovementSystem,
@@ -31,15 +31,14 @@ pub struct Application {
     pub window: Window,
     pub session: ConsoleSession,
 
-    pub entities: EntityPool,
-    pub components: EntityComponents,
+    pub ecs: Ecs,
 
     pub movement_system: MovementSystem,
     pub puppet_system: PuppetSystem,
     pub physics_system: PhysicsSystem,
 
     pub paint_system: PaintSystem,
-    pub interpreter: EventInterpreter,
+    pub events: EventInterpreter,
 
     pub frame: Frame,
 }
@@ -47,19 +46,11 @@ pub struct Application {
 impl Application {
     fn redraw(&mut self) {
         self.frame.start();
-        self.paint_system.redraw(
-            &self.config,
-            &self.frame,
-            &self.session,
-            &self.entities,
-            &self.components,
-        );
-        self.physics_system
-            .update(&self.frame, &self.entities, &mut self.components);
-        self.movement_system
-            .update(&self.frame, &self.entities, &mut self.components);
-        self.puppet_system
-            .update(&self.frame, &self.entities, &mut self.components);
+        self.paint_system
+            .redraw(&self.config, &self.frame, &self.session, &self.ecs);
+        self.physics_system.update(&self.frame, &mut self.ecs);
+        self.movement_system.update(&self.frame, &mut self.ecs);
+        self.puppet_system.update(&self.frame, &mut self.ecs);
         self.frame.end();
     }
 
@@ -67,9 +58,7 @@ impl Application {
         let action = self.process_app_event(event);
         match action {
             EventAction::Unconsumed => {
-                if let EventAction::React(action) =
-                    self.interpreter.consume(&self.window.id(), event)
-                {
+                if let EventAction::React(action) = self.events.consume(&self.window.id(), event) {
                     action.perform(self);
                 };
             }
@@ -136,29 +125,28 @@ impl Application {
             window,
             session: ConsoleSession::new(),
 
-            entities: EntityPool::new(),
-            components: EntityComponents::new(),
+            ecs: Ecs::new(),
 
             paint_system,
             movement_system: MovementSystem::new(),
             puppet_system: PuppetSystem::new(),
             physics_system: PhysicsSystem::new(),
 
-            interpreter: EventInterpreter::new(),
+            events: EventInterpreter::new(),
             frame: Frame::new(60, Falloff::Geometric(1.1)),
         };
 
-        let player = app.entities.allocate();
-        app.components.camera.set(player, Camera::new());
-        app.components.position.set(
+        let player = app.ecs.pool.allocate();
+        app.ecs.comps.camera.set(player, Camera::new());
+        app.ecs.comps.position.set(
             player,
             Position {
                 x: 0.0,
-                y: 0.0,
-                z: 32.0,
+                y: 0.5,
+                z: 10.0,
             },
         );
-        app.components.rotation.set(
+        app.ecs.comps.rotation.set(
             player,
             Rotation {
                 pitch: 0.0,
@@ -166,14 +154,14 @@ impl Application {
                 roll: 0.0,
             },
         );
-        app.components.puppet.set(
+        app.ecs.comps.puppet.set(
             player,
             Puppet::FreeCamera(FreeCameraPuppet::new(10, Falloff::Geometric(1.8))),
         );
         app.paint_system.active_camera = player;
 
-        let cube_friend_0 = app.entities.allocate();
-        app.components.velocity.set(
+        let cube_friend_0 = app.ecs.pool.allocate();
+        app.ecs.comps.velocity.set(
             cube_friend_0,
             Velocity {
                 x: 0.2,
@@ -181,15 +169,15 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.components.position.set(
+        app.ecs.comps.position.set(
             cube_friend_0,
             Position {
-                x: 0.0,
-                y: 20.0,
+                x: -2.0,
+                y: -2.0,
                 z: 0.0,
             },
         );
-        app.components.volumes.set(
+        app.ecs.comps.volumes.set(
             cube_friend_0,
             Volume::Box {
                 x: 0.75,
@@ -197,7 +185,7 @@ impl Application {
                 z: 0.75,
             },
         );
-        app.components.rotation.set(
+        app.ecs.comps.rotation.set(
             cube_friend_0,
             Rotation {
                 pitch: 45.0,
@@ -205,7 +193,7 @@ impl Application {
                 roll: 45.0,
             },
         );
-        app.components.spin.set(
+        app.ecs.comps.spin.set(
             cube_friend_0,
             Spin {
                 x: 2.0,
@@ -214,8 +202,8 @@ impl Application {
             },
         );
 
-        let cube_friend_1 = app.entities.allocate();
-        app.components.velocity.set(
+        let cube_friend_1 = app.ecs.pool.allocate();
+        app.ecs.comps.velocity.set(
             cube_friend_1,
             Velocity {
                 x: -0.1,
@@ -223,15 +211,15 @@ impl Application {
                 z: 0.0,
             },
         );
-        app.components.position.set(
+        app.ecs.comps.position.set(
             cube_friend_1,
             Position {
-                x: 8.0,
-                y: 18.0,
+                x: 4.0,
+                y: 0.0,
                 z: 0.0,
             },
         );
-        app.components.volumes.set(
+        app.ecs.comps.volumes.set(
             cube_friend_1,
             Volume::Box {
                 x: 0.75,
@@ -239,11 +227,9 @@ impl Application {
                 z: 0.75,
             },
         );
-
-        if let Some(action) = app.interpreter.push_context(SceneInputContext::new()) {
+        if let Some(action) = app.events.push_context(SceneInputContext::new()) {
             action.perform(&mut app);
         }
-
         app
     }
 }

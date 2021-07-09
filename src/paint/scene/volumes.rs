@@ -2,7 +2,7 @@
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{util::DeviceExt, BindGroupLayout, Device};
 
-use crate::{entity::{Entity, EntityComponents, EntityPool}, types::Volume, paint::texture::Texture};
+use crate::{entity::{Ecs, Entity}, paint::texture::Texture, types::Volume};
 
 pub struct VolumePainter {
     pub pipeline: wgpu::RenderPipeline,
@@ -116,11 +116,11 @@ impl VolumePainter {
         }
     }
 
-    pub fn update(&mut self, device: &Device, entities: &EntityPool, components: &EntityComponents) {
+    pub fn update(&mut self, device: &Device, ecs: &Ecs) {
         /// Interpret an entity as an instance to draw
-        fn entity_to_instance(entity: Entity, components: &EntityComponents) -> Option<InstanceData> {
+        fn entity_to_instance(entity: Entity, ecs: &Ecs) -> Option<InstanceData> {
             if let (Some(pos), Some(Volume::Box { x, y, z })) =
-                (components.position.get(entity), components.volumes.get(entity))
+                (ecs.comps.position.get(entity), ecs.comps.volumes.get(entity))
             {
                 let mut model: Matrix4<f32> = cgmath::Matrix4::identity();
 
@@ -142,9 +142,9 @@ impl VolumePainter {
         }
 
         // Construct instance buffer from box instances
-        let box_instances: Vec<InstanceData> = entities
+        let box_instances: Vec<InstanceData> = ecs.pool
             .iter()
-            .filter_map(|entity| entity_to_instance(entity, components))
+            .filter_map(|entity| entity_to_instance(entity, ecs))
             .collect();
         self.instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,

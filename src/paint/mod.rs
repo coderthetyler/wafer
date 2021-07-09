@@ -8,9 +8,9 @@ use winit::{dpi::PhysicalSize, window::Window};
 use crate::{
     app::AppConfig,
     camera::Camera,
-    session::ConsoleSession,
-    entity::{Entity, EntityComponents, EntityPool},
+    entity::{Ecs, Entity},
     frame::Frame,
+    session::ConsoleSession,
 };
 
 use self::{overlay::OverlayPainter, scene::ScenePainter};
@@ -107,10 +107,10 @@ impl PaintSystem {
         state: &AppConfig,
         frame: &Frame,
         session: &ConsoleSession,
-        entities: &EntityPool,
-        components: &EntityComponents,
+        ecs: &Ecs,
     ) {
-        let camera = components
+        let camera = ecs
+            .comps
             .camera
             .get(self.active_camera)
             .unwrap_or(&self.fallback_camera);
@@ -130,13 +130,8 @@ impl PaintSystem {
         };
         // ctx: &mut PaintContext, camera: &Camera
         let commands: Vec<CommandBuffer> = vec![
-            self.scene.paint(
-                state,
-                &mut context,
-                self.active_camera,
-                entities,
-                components,
-            ),
+            self.scene
+                .paint(state, &mut context, self.active_camera, ecs),
             self.overlay.draw(
                 state,
                 frame,

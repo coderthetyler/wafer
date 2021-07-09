@@ -13,6 +13,20 @@ pub type Entity = GenerationalIndex;
 pub type EntityPool = GenerationalIndexPool;
 pub type ComponentVec<T> = GenerationalIndexVec<T>;
 
+pub struct Ecs {
+    pub pool: EntityPool,
+    pub comps: EntityComponents,
+}
+
+impl Ecs {
+    pub fn new() -> Self {
+        Self {
+            pool: EntityPool::new(),
+            comps: EntityComponents::new(),
+        }
+    }
+}
+
 pub struct EntityComponents {
     pub position: ComponentVec<Position>,
     pub velocity: ComponentVec<Velocity>,
@@ -24,7 +38,7 @@ pub struct EntityComponents {
 }
 
 impl EntityComponents {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             position: ComponentVec::new(),
             velocity: ComponentVec::new(),
