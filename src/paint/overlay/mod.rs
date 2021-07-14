@@ -1,3 +1,5 @@
+mod widgets;
+
 use futures::{
     executor::{LocalPool, LocalSpawner},
     task::SpawnExt,
@@ -10,9 +12,12 @@ use wgpu_glyph::{ab_glyph::FontArc, GlyphBrush, GlyphBrushBuilder, Section, Text
 
 use crate::{app::AppConfig, frame::Frame, session::ConsoleSession};
 
+use self::widgets::WidgetPainter;
+
 /// Responsible for rendering an overlay.
 /// This includes rendering any UI or debugging info.
 pub struct OverlayPainter {
+    widget_painter: WidgetPainter,
     glyph_brush: GlyphBrush<()>,
     staging_belt: StagingBelt,
     local_pool: LocalPool,
@@ -20,7 +25,7 @@ pub struct OverlayPainter {
 }
 
 impl OverlayPainter {
-    pub fn new(device: &wgpu::Device) -> Self {
+    pub fn new(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> Self {
         // Stuff for text rendering
         let staging_belt = StagingBelt::new(1024);
         let local_pool = LocalPool::new();
@@ -29,6 +34,7 @@ impl OverlayPainter {
         let glyph_brush =
             GlyphBrushBuilder::using_font(font).build(&device, TextureFormat::Bgra8UnormSrgb);
         Self {
+            widget_painter: WidgetPainter::new(device, sc_desc),
             glyph_brush,
             staging_belt,
             local_pool,
@@ -54,6 +60,28 @@ impl OverlayPainter {
         triangle_count: usize,
     ) -> CommandBuffer {
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor::default());
+
+        if session.is_showing() {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: color_target,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+            {
+                let pntr = &self.widget_painter;
+                render_pass.set_pipeline(&pntr.slider_pipeline);
+                render_pass.set_vertex_buffer(0, pntr.vertex_buffer.slice(..));
+                render_pass.set_vertex_buffer(1, pntr.instance_buffer.slice(..));
+                render_pass.draw(0..pntr.vertex_count, 0..pntr.instance_count);
+            }
+        }
         if session.is_showing() {
             let x = 10.0;
             let mut y = bounds.1 as f32 - 50.0;

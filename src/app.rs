@@ -139,7 +139,7 @@ impl Application {
         );
         self.ecs.comps.puppet.set(
             player,
-            Puppet::FreeCamera(FreeCameraPuppet::new(10, Falloff::Geometric(1.8))),
+            Puppet::FreeCamera(FreeCameraPuppet::new(30, Falloff::Geometric(1.8))),
         );
         self.paint_system.active_camera = player;
 

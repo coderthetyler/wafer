@@ -102,7 +102,7 @@ impl FreeCameraPuppet {
 
         // position
         if ecs.comps.position.get(entity).is_some() {
-            let speed = 20.0;
+            let speed = 5.0;
 
             let up: Vector3<f32> = forward.cross(right).normalize();
             let mut delta: Vector3<f32> = [0.0, 0.0, 0.0].into();

@@ -73,7 +73,7 @@ impl PaintSystem {
         };
         let swapchain = device.create_swap_chain(&surface, &swapchain_desc);
         let world_painter = ScenePainter::new(&device, &swapchain_desc);
-        let overlay_painter = OverlayPainter::new(&device);
+        let overlay_painter = OverlayPainter::new(&device, &swapchain_desc);
         Self {
             active_camera: Entity::none(),
             surface: PaintSurface {

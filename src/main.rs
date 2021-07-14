@@ -1,9 +1,3 @@
-use app::Application;
-use winit::{
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-};
-
 mod action;
 mod app;
 mod camera;
@@ -17,10 +11,21 @@ mod puppet;
 mod session;
 mod types;
 
+use app::Application;
+use winit::{
+    dpi::LogicalSize,
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
+
 fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("voxel-planet")
+        .with_inner_size(LogicalSize {
+            width: 800.0,
+            height: 600.0,
+        })
         .build(&event_loop)
         .unwrap();
 
