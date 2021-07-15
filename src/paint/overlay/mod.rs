@@ -1,5 +1,7 @@
 mod widgets;
 
+use std::ops::Deref;
+
 use futures::{
     executor::{LocalPool, LocalSpawner},
     task::SpawnExt,
@@ -13,6 +15,8 @@ use wgpu_glyph::{ab_glyph::FontArc, GlyphBrush, GlyphBrushBuilder, Section, Text
 use crate::{app::AppConfig, frame::Frame, session::ConsoleSession};
 
 use self::widgets::WidgetPainter;
+
+use super::PaintContext;
 
 /// Responsible for rendering an overlay.
 /// This includes rendering any UI or debugging info.
@@ -53,12 +57,12 @@ impl OverlayPainter {
         &mut self,
         config: &AppConfig,
         frame: &Frame,
-        device: &Device,
+        context: &mut PaintContext,
         color_target: &TextureView,
-        bounds: (u32, u32),
         session: &ConsoleSession,
         triangle_count: usize,
     ) -> CommandBuffer {
+        let device = &context.surface.device;
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor::default());
 
         if session.is_showing() {
@@ -75,8 +79,10 @@ impl OverlayPainter {
                 depth_stencil_attachment: None,
             });
             {
-                let pntr = &self.widget_painter;
+                let pntr = &mut self.widget_painter;
+                pntr.update_uniforms(&context.surface.queue, context.width, context.height);
                 render_pass.set_pipeline(&pntr.slider_pipeline);
+                render_pass.set_bind_group(0, &pntr.uniform_group, &[]);
                 render_pass.set_vertex_buffer(0, pntr.vertex_buffer.slice(..));
                 render_pass.set_vertex_buffer(1, pntr.instance_buffer.slice(..));
                 render_pass.draw(0..pntr.vertex_count, 0..pntr.instance_count);
@@ -84,11 +90,11 @@ impl OverlayPainter {
         }
         if session.is_showing() {
             let x = 10.0;
-            let mut y = bounds.1 as f32 - 50.0;
+            let mut y = context.height - 50.0;
             self.draw_text(
                 device,
                 color_target,
-                bounds,
+                (context.width, context.height),
                 &mut encoder,
                 session.console.get_text().as_str(),
                 (x, y),
@@ -101,7 +107,7 @@ impl OverlayPainter {
                 self.draw_text(
                     device,
                     color_target,
-                    bounds,
+                    (context.width, context.height),
                     &mut encoder,
                     entry.as_str(),
                     (x, y),
@@ -112,7 +118,7 @@ impl OverlayPainter {
             self.draw_text(
                 device,
                 color_target,
-                bounds,
+                (context.width, context.height),
                 &mut encoder,
                 format!(
                     "fps: {}\nfaces: {}",
@@ -132,7 +138,7 @@ impl OverlayPainter {
         &mut self,
         device: &Device,
         color_target: &TextureView,
-        (width, height): (u32, u32),
+        (width, height): (f32, f32),
         encoder: &mut CommandEncoder,
         text: &str,
         position: (f32, f32),
@@ -142,7 +148,7 @@ impl OverlayPainter {
             .with_scale(35.0);
         let prompt_section = Section::default()
             .with_screen_position(position)
-            .with_bounds((width as f32, height as f32))
+            .with_bounds((width, height))
             .add_text(prompt_text);
         self.glyph_brush.queue(prompt_section);
         self.glyph_brush
@@ -151,8 +157,8 @@ impl OverlayPainter {
                 &mut self.staging_belt,
                 encoder,
                 color_target,
-                width,
-                height,
+                width as u32,
+                height as u32,
             )
             .expect("Draw queued");
     }

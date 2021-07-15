@@ -113,7 +113,6 @@ impl PaintSystem {
             Err(_) => return, // Handled on the next frame
         };
         let color_target = &swapchain_texture.view;
-        let color_target_bounds = (surface.swapchain_desc.width, surface.swapchain_desc.height);
         let mut context = PaintContext {
             surface,
             color_target,
@@ -126,9 +125,8 @@ impl PaintSystem {
             self.overlay.draw(
                 state,
                 frame,
-                &self.surface.device,
+                &mut context,
                 color_target,
-                color_target_bounds,
                 session,
                 10, // TODO re-add triangle counting
             ),
