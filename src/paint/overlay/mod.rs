@@ -1,7 +1,5 @@
 mod widgets;
 
-use std::ops::Deref;
-
 use futures::{
     executor::{LocalPool, LocalSpawner},
     task::SpawnExt,

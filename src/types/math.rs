@@ -8,6 +8,21 @@ pub enum Volume {
     Box { x: f32, y: f32, z: f32 },
 }
 
+/// Represents a rectangle in 2-space.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Extent {
+    pub width: f32,
+    pub height: f32,
+}
+
+/// Represents a point in 2-space.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Point {
+    pub x: f32,
+    pub y: f32,
+}
+
+/// Represents a position in 3-space.
 #[derive(Clone, Copy, Debug)]
 pub struct Position {
     pub x: f32,

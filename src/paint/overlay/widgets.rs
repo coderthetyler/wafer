@@ -1,5 +1,10 @@
 use wgpu::util::DeviceExt;
 
+use crate::{
+    types::{Extent, Point},
+    widgets::Slider,
+};
+
 pub struct WidgetPainter {
     pub slider_pipeline: wgpu::RenderPipeline,
 
@@ -135,32 +140,10 @@ impl WidgetPainter {
     }
 }
 
-pub struct Slider {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
-    progress: f32,
-}
-
-impl Default for Slider {
-    fn default() -> Self {
-        Self {
-            x: 10.0,
-            y: 100.0,
-            width: 400.0,
-            height: 50.0,
-            progress: 0.2,
-        }
-    }
-}
-
 impl Slider {
     fn as_quad(&self) -> [Vertex; 6] {
-        let x = self.x;
-        let y = self.y;
-        let width = self.width;
-        let height = self.height;
+        let Point { x, y } = self.location;
+        let Extent { width, height } = self.extent;
         let bottom_left = Vertex {
             position: [x, y + height],
         };
@@ -183,9 +166,9 @@ impl Slider {
 
     fn as_instance(&self) -> Instance {
         Instance {
-            size: [self.width, self.height],
+            size: [self.extent.width, self.extent.height],
             progress: self.progress,
-            top_left: [self.x, self.y],
+            top_left: [self.location.x, self.location.y],
         }
     }
 }
@@ -205,20 +188,7 @@ struct Instance {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Default, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct Uniforms {
     ortho_proj: [[f32; 4]; 4],
-}
-
-impl Default for Uniforms {
-    fn default() -> Self {
-        Self {
-            ortho_proj: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
-        }
-    }
 }

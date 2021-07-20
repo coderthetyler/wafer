@@ -1,3 +1,7 @@
+mod overlay;
+mod scene;
+mod texture;
+
 use wgpu::{
     BackendBit, CommandBuffer, Device, DeviceDescriptor, Features, Instance, Limits,
     PowerPreference, PresentMode, Queue, RequestAdapterOptions, Surface, SwapChain,
@@ -13,10 +17,6 @@ use crate::{
 };
 
 use self::{overlay::OverlayPainter, scene::ScenePainter};
-
-mod overlay;
-mod scene;
-mod texture;
 
 pub struct PaintSurface {
     pub surface: Surface,

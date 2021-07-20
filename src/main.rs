@@ -10,6 +10,7 @@ mod physics;
 mod puppet;
 mod session;
 mod types;
+mod widgets;
 
 use app::Application;
 use winit::{

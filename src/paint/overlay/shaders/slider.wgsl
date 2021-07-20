@@ -64,7 +64,6 @@ fn fs_main(in: VsOutput) -> [[location(0)]] vec4<f32> {
     // border parameters
     let border_width: f32 = 2.0;
     let border_color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-    let border_aa_color = vec4<f32>(0.1, 0.1, 0.1, 1.0);
 
     // draw knob
     let dist: f32 = length(frag - knob);
