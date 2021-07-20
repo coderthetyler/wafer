@@ -1,6 +1,6 @@
-# whitespace
+# wafer
 
-A tech demo template
+My light & crispy demo builder
 
 ![Latest screenshot](screenshots/latest.png)
 
