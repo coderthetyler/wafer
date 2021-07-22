@@ -1,8 +1,4 @@
-# wafer
-
-My light & crispy demo builder
-
-![Latest screenshot](screenshots/latest.png)
+# 🫓 wafer
 
 ## 🔥 Getting started
 
